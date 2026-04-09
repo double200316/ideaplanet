@@ -1,0 +1,2337 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>想法星球 - 发现下一个好想法</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#0ea5e9;--primary-dark:#0284c7;--primary-light:#38bdf8;
+  --violet:#8b5cf6;--rose:#f43f5e;--emerald:#10b981;--amber:#f59e0b;
+  --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+  --card:rgba(30,41,59,0.8);--card2:rgba(15,23,42,0.9);
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.12);
+  --radius:12px;--radius2:8px;--radius3:24px;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);--shadow2:0 8px 40px rgba(0,0,0,0.5);
+  --transition:all 0.25s ease;
+  --glow:0 0 20px rgba(14,165,233,0.3);
+  --gradient:linear-gradient(135deg,#0ea5e9,#8b5cf6,#f43f5e);
+}
+body{background:var(--bg);color:var(--text);font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* 星空背景 */
+#starCanvas{position:fixed;inset:0;z-index:-10;pointer-events:none}
+.bg-glow{position:fixed;inset:0;z-index:-9;pointer-events:none;
+  background:radial-gradient(ellipse at 20% 10%,rgba(14,165,233,0.07) 0%,transparent 50%),
+             radial-gradient(ellipse at 80% 80%,rgba(139,92,246,0.07) 0%,transparent 50%),
+             radial-gradient(ellipse at 50% 50%,rgba(244,63,94,0.04) 0%,transparent 60%)}
+
+/* 滚动条 */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:rgba(15,23,42,0.8)}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--primary),var(--violet));border-radius:3px}
+
+/* ===== 导航栏 ===== */
+nav{
+  background:rgba(15,23,42,0.85);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;display:flex;align-items:center;justify-content:space-between;
+  height:64px;position:sticky;top:0;z-index:99;
+  box-shadow:0 1px 0 rgba(255,255,255,0.05)
+}
+.nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none}
+.nav-logo-icon{width:36px;height:36px;border-radius:10px;
+  background:var(--gradient);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 0 16px rgba(14,165,233,0.4)}
+.nav-logo-text{font-size:18px;font-weight:800;
+  background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-center{display:flex;gap:2px}
+.nav-links a{padding:7px 14px;border-radius:var(--radius2);cursor:pointer;
+  font-size:14px;font-weight:500;color:var(--text2);transition:var(--transition);text-decoration:none;display:block}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.05)}
+.nav-links a.active{color:var(--primary);background:rgba(14,165,233,0.1);font-weight:600}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-login{padding:7px 16px;border-radius:var(--radius2);
+  border:1px solid var(--border2);
+  background:transparent;color:var(--text2);cursor:pointer;font-size:14px;font-weight:500;transition:var(--transition)}
+.btn-login:hover{border-color:var(--primary);color:var(--primary);background:rgba(14,165,233,0.08)}
+.btn-submit-idea{padding:8px 18px;border-radius:var(--radius2);
+  background:var(--gradient);
+  border:none;color:#fff;cursor:pointer;font-size:14px;font-weight:600;
+  transition:var(--transition);display:flex;align-items:center;gap:6px;
+  box-shadow:0 4px 14px rgba(14,165,233,0.35)}
+.btn-submit-idea:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(14,165,233,0.5)}
+.user-avatar{width:36px;height:36px;border-radius:50%;
+  background:var(--gradient);
+  display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;
+  cursor:pointer;color:#fff;position:relative;border:2px solid rgba(14,165,233,0.4);
+  box-shadow:0 0 12px rgba(14,165,233,0.3)}
+.user-dropdown{position:absolute;top:48px;right:0;
+  background:rgba(15,23,42,0.95);backdrop-filter:blur(20px);
+  border:1px solid var(--border2);border-radius:var(--radius);min-width:160px;
+  padding:6px;box-shadow:var(--shadow2);display:none;z-index:200}
+.user-dropdown.show{display:block}
+.user-dropdown a{display:block;padding:9px 12px;border-radius:var(--radius2);
+  color:var(--text2);cursor:pointer;font-size:14px;transition:var(--transition)}
+.user-dropdown a:hover{background:rgba(255,255,255,0.05);color:var(--text)}
+.user-dropdown .divider{height:1px;background:var(--border);margin:4px 0}
+
+/* ===== 页面切换 ===== */
+.page{display:none}
+.page.active{display:block}
+
+/* ===== 首页 Hero ===== */
+.hero{
+  position:relative;overflow:hidden;
+  padding:80px 24px 64px;text-align:center;
+  border-bottom:1px solid var(--border)
+}
+.hero::before{content:'';position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(ellipse at 50% 0%,rgba(14,165,233,0.12) 0%,transparent 60%)}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;
+  background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.25);
+  border-radius:var(--radius3);padding:6px 16px;font-size:13px;color:var(--primary);
+  margin-bottom:24px;font-weight:600}
+.hero h1{font-size:52px;font-weight:900;line-height:1.15;margin-bottom:18px}
+.hero h1 .gradient-text{
+  background:var(--gradient);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:17px;color:var(--text2);max-width:560px;margin:0 auto 32px;line-height:1.8}
+.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn-hero-primary{padding:14px 32px;border-radius:var(--radius2);
+  background:var(--gradient);
+  border:none;color:#fff;font-size:15px;font-weight:700;
+  cursor:pointer;transition:var(--transition);
+  box-shadow:0 4px 20px rgba(14,165,233,0.4)}
+.btn-hero-primary:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(14,165,233,0.55)}
+.btn-hero-secondary{padding:14px 32px;border-radius:var(--radius2);
+  background:rgba(255,255,255,0.05);border:1px solid var(--border2);
+  color:var(--text);font-size:15px;cursor:pointer;transition:var(--transition);font-weight:500;
+  backdrop-filter:blur(8px)}
+.btn-hero-secondary:hover{border-color:var(--primary);color:var(--primary);background:rgba(14,165,233,0.06)}
+.hero-stats{display:flex;gap:40px;justify-content:center;margin-top:48px;flex-wrap:wrap}
+.stat-item{text-align:center}
+.stat-num{font-size:28px;font-weight:800;
+  background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-label{font-size:12px;color:var(--text3);margin-top:4px}
+
+/* ===== 主体布局 ===== */
+.main-layout{max-width:1100px;margin:0 auto;padding:32px 24px;display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start}
+
+/* ===== 筛选/Tab栏 ===== */
+.content-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.tab-group{display:flex;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius2);padding:3px;gap:0}
+.tab-btn{padding:7px 18px;border-radius:6px;border:none;background:transparent;
+  color:var(--text2);font-size:14px;font-weight:500;cursor:pointer;transition:var(--transition)}
+.tab-btn.active{background:rgba(14,165,233,0.15);color:var(--primary);font-weight:600;
+  box-shadow:0 0 10px rgba(14,165,233,0.2)}
+.search-wrap{position:relative;flex:1;max-width:280px}
+.search-wrap input{width:100%;padding:9px 14px 9px 38px;
+  border:1px solid var(--border2);
+  border-radius:var(--radius2);
+  background:rgba(255,255,255,0.04);
+  font-size:14px;color:var(--text);
+  outline:none;transition:var(--transition);font-family:inherit;
+  backdrop-filter:blur(8px)}
+.search-wrap input::placeholder{color:var(--text3)}
+.search-wrap input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(14,165,233,0.12)}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px}
+
+/* 分类标签 */
+.cat-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.cat-tag{padding:6px 14px;border-radius:var(--radius3);
+  border:1px solid var(--border);
+  background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:var(--transition)}
+.cat-tag:hover{border-color:var(--primary);color:var(--primary);background:rgba(14,165,233,0.06)}
+.cat-tag.active{background:rgba(14,165,233,0.15);border-color:var(--primary);color:var(--primary)}
+
+/* ===== 想法卡片列表 ===== */
+.idea-list{display:flex;flex-direction:column;gap:2px}
+.idea-card{
+  background:rgba(30,41,59,0.7);
+  backdrop-filter:blur(12px);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px 20px;display:flex;align-items:flex-start;gap:14px;
+  cursor:pointer;transition:var(--transition);position:relative}
+.idea-card:hover{background:rgba(30,41,59,0.95);border-color:rgba(14,165,233,0.25);
+  box-shadow:0 4px 20px rgba(14,165,233,0.1);transform:translateY(-1px)}
+
+/* 投票按钮 */
+.vote-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:52px;padding:8px 6px;
+  border:1px solid var(--border2);border-radius:var(--radius2);
+  background:rgba(255,255,255,0.04);cursor:pointer;transition:var(--transition);flex-shrink:0;gap:2px;
+  font-family:inherit}
+.vote-btn:hover{border-color:var(--primary);background:rgba(14,165,233,0.1)}
+.vote-btn.voted{border-color:var(--primary);background:rgba(14,165,233,0.2);color:var(--primary)}
+.vote-btn .vote-arrow{font-size:14px;line-height:1;color:var(--text2)}
+.vote-btn .vote-count{font-size:13px;font-weight:700;line-height:1;color:var(--text)}
+.vote-btn.voted .vote-arrow,.vote-btn.voted .vote-count{color:var(--primary)}
+
+/* 想法icon */
+.idea-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:24px;flex-shrink:0;
+  border:1px solid var(--border);background:rgba(255,255,255,0.04)}
+
+/* 想法内容 */
+.idea-body{flex:1;min-width:0}
+.idea-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap}
+.idea-title{font-size:16px;font-weight:700;color:var(--text);line-height:1.3}
+.idea-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
+  padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.status-idea{background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.2)}
+.status-building{background:rgba(14,165,233,0.15);color:var(--primary);border:1px solid rgba(14,165,233,0.2)}
+.status-launched{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.2)}
+.idea-tagline{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:8px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.idea-meta{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--text3);flex-wrap:wrap}
+.idea-meta-item{display:flex;align-items:center;gap:3px}
+.idea-tags{display:flex;gap:6px;flex-wrap:wrap}
+.idea-tag{background:rgba(255,255,255,0.05);color:var(--text2);font-size:11px;
+  padding:2px 8px;border-radius:20px;border:1px solid var(--border)}
+
+/* 排名徽章 */
+.rank-badge{position:absolute;top:16px;right:16px;font-size:11px;font-weight:700;
+  color:var(--text3);background:rgba(255,255,255,0.05);padding:2px 7px;border-radius:20px}
+.rank-badge.rank-1{color:#fbbf24;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.2)}
+.rank-badge.rank-2{color:#94a3b8;background:rgba(148,163,184,0.1)}
+.rank-badge.rank-3{color:#fb923c;background:rgba(251,146,60,0.12)}
+
+/* ===== 侧边栏 ===== */
+.sidebar-block{
+  background:rgba(30,41,59,0.7);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow)}
+.sidebar-block-title{padding:14px 18px;font-size:14px;font-weight:700;color:var(--text);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+.sidebar-block-body{padding:14px 18px}
+
+/* 热门分类侧栏 */
+.cat-list{display:flex;flex-direction:column;gap:2px}
+.cat-list-item{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;border-radius:var(--radius2);cursor:pointer;transition:var(--transition)}
+.cat-list-item:hover{background:rgba(255,255,255,0.05)}
+.cat-list-item-left{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text)}
+.cat-count-badge{background:rgba(255,255,255,0.06);color:var(--text3);font-size:12px;
+  padding:1px 7px;border-radius:20px}
+
+/* 今日最热 */
+.hot-idea-list{display:flex;flex-direction:column;gap:10px}
+.hot-idea-item{display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:6px;border-radius:var(--radius2);transition:var(--transition)}
+.hot-idea-item:hover{background:rgba(255,255,255,0.05)}
+.hot-rank{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;
+  background:rgba(255,255,255,0.07);color:var(--text3)}
+.hot-rank.r1{background:linear-gradient(135deg,#0ea5e9,#8b5cf6);color:#fff;box-shadow:0 0 8px rgba(14,165,233,0.4)}
+.hot-rank.r2{background:linear-gradient(135deg,#8b5cf6,#f43f5e);color:#fff}
+.hot-rank.r3{background:rgba(245,158,11,0.25);color:#fbbf24}
+.hot-idea-text{font-size:13px;color:var(--text2);line-height:1.5;flex:1}
+.hot-idea-votes{font-size:12px;color:var(--text3);white-space:nowrap}
+
+/* 发布召唤卡 */
+.cta-card{
+  position:relative;overflow:hidden;
+  background:linear-gradient(135deg,rgba(14,165,233,0.12),rgba(139,92,246,0.12));
+  border:1px solid rgba(14,165,233,0.2);
+  border-radius:var(--radius);
+  padding:22px;text-align:center;margin-bottom:16px}
+.cta-card::before{content:'';position:absolute;inset:0;opacity:0.05;
+  background:var(--gradient)}
+.cta-card h3{font-size:15px;font-weight:700;margin-bottom:8px;color:var(--text);position:relative}
+.cta-card p{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px;position:relative}
+.btn-cta{width:100%;padding:11px;border-radius:var(--radius2);
+  background:var(--gradient);
+  border:none;color:#fff;font-size:14px;font-weight:600;
+  cursor:pointer;transition:var(--transition);position:relative;
+  box-shadow:0 4px 14px rgba(14,165,233,0.3)}
+.btn-cta:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(14,165,233,0.45)}
+
+/* ===== 想法广场/讨论区页头 ===== */
+.page-header{
+  background:linear-gradient(180deg,rgba(14,165,233,0.06) 0%,transparent 100%);
+  border-bottom:1px solid var(--border);padding:32px 24px 26px}
+.page-header-inner{max-width:1100px;margin:0 auto}
+.page-header h1{font-size:28px;font-weight:800;margin-bottom:6px;
+  background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.page-header p{font-size:14px;color:var(--text2)}
+
+/* ===== 讨论区 ===== */
+.disc-layout{max-width:1100px;margin:0 auto;padding:24px;display:grid;grid-template-columns:1fr 280px;gap:24px}
+.disc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+.disc-top h2{font-size:20px;font-weight:800;color:var(--text)}
+.btn-post{padding:9px 20px;border-radius:var(--radius2);
+  background:var(--gradient);
+  border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:var(--transition);
+  box-shadow:0 4px 12px rgba(14,165,233,0.3)}
+.btn-post:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(14,165,233,0.45)}
+.disc-cats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.disc-cat-btn{padding:6px 14px;border-radius:var(--radius3);
+  border:1px solid var(--border);
+  background:transparent;color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;transition:var(--transition)}
+.disc-cat-btn.active{background:rgba(14,165,233,0.15);border-color:var(--primary);color:var(--primary)}
+.disc-cat-btn:hover:not(.active){border-color:var(--primary);color:var(--primary);background:rgba(14,165,233,0.06)}
+.post-list{display:flex;flex-direction:column;gap:2px}
+.post-item{
+  background:rgba(30,41,59,0.7);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;cursor:pointer;transition:var(--transition);display:flex;align-items:flex-start;gap:14px}
+.post-item:hover{background:rgba(30,41,59,0.95);border-color:rgba(14,165,233,0.2);transform:translateY(-1px)}
+.post-avatar{width:40px;height:40px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff}
+.post-content{flex:1;min-width:0}
+.post-cat-tag{display:inline-block;background:rgba(139,92,246,0.15);color:#a78bfa;
+  font-size:11px;padding:2px 8px;border-radius:20px;margin-bottom:5px;font-weight:600;
+  border:1px solid rgba(139,92,246,0.2)}
+.post-title{font-size:15px;font-weight:700;margin-bottom:5px;color:var(--text)}
+.post-excerpt{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.post-footer{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--text3)}
+.post-action{display:flex;align-items:center;gap:3px;cursor:pointer;transition:var(--transition)}
+.post-action:hover{color:var(--primary)}
+
+/* ===== 想法详情模态框 ===== */
+.idea-detail-modal{max-width:640px}
+.idea-detail-header{display:flex;gap:14px;align-items:flex-start;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.idea-detail-icon{width:64px;height:64px;border-radius:12px;font-size:32px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);background:rgba(255,255,255,0.04);flex-shrink:0}
+.idea-detail-info{flex:1}
+.idea-detail-title{font-size:20px;font-weight:800;margin-bottom:6px;color:var(--text)}
+.idea-detail-tagline{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:10px}
+.idea-detail-meta{display:flex;gap:10px;flex-wrap:wrap}
+.idea-detail-vote{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.vote-btn-lg{padding:10px 16px;
+  border:1px solid var(--border2);border-radius:var(--radius2);
+  background:rgba(255,255,255,0.04);cursor:pointer;transition:var(--transition);font-family:inherit;min-width:64px;text-align:center}
+.vote-btn-lg:hover{border-color:var(--primary);background:rgba(14,165,233,0.1)}
+.vote-btn-lg.voted{border-color:var(--primary);background:rgba(14,165,233,0.2);color:var(--primary)}
+.vote-btn-lg .va{font-size:18px;display:block}
+.vote-btn-lg .vc{font-size:16px;font-weight:800;display:block;color:var(--text)}
+
+/* ===== 评论区 ===== */
+.comment-section{margin-top:4px}
+.comment-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px}
+.comment-item{display:flex;gap:12px;margin-bottom:18px;animation:fadeIn .25s ease}
+.comment-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--violet));
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;
+  color:#fff;flex-shrink:0;text-transform:uppercase}
+.comment-body{flex:1;min-width:0}
+.comment-meta{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.comment-author{font-size:13px;font-weight:600;color:var(--text)}
+.comment-time{font-size:12px;color:var(--text3)}
+.comment-text{font-size:14px;color:var(--text2);line-height:1.7;word-break:break-word}
+.comment-input-wrap{display:flex;gap:12px;margin-top:20px;padding-top:18px;border-top:1px solid var(--border)}
+.comment-textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border2);
+  border-radius:var(--radius2);padding:10px 14px;color:var(--text);font-size:14px;
+  font-family:inherit;resize:vertical;line-height:1.6;transition:border .2s}
+.comment-textarea:focus{outline:none;border-color:var(--primary);background:rgba(14,165,233,0.05)}
+.btn-primary-sm{padding:8px 20px;border:none;border-radius:var(--radius2);
+  background:var(--primary);color:#fff;font-size:13px;font-weight:600;
+  cursor:pointer;transition:var(--transition)}
+.btn-primary-sm:hover{background:#0284c7;transform:translateY(-1px)}
+.btn-cancel-sm{padding:6px 14px;border:1px solid var(--border2);border-radius:var(--radius2);
+  background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:var(--transition)}
+.btn-cancel-sm:hover{border-color:var(--text2);color:var(--text)}
+.reply-btn{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;
+  padding:0 6px;transition:color .2s;margin-left:auto}
+.reply-btn:hover{color:var(--primary)}
+.reply-to{font-size:12px;color:var(--text3)}
+.reply-to b{color:var(--primary);font-weight:600}
+.reply-list{padding-left:44px;border-left:2px solid var(--border);margin:4px 0 12px}
+.is-reply{margin-bottom:10px}
+.is-reply .comment-avatar{width:28px;height:28px;font-size:12px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ===== 模态框 ===== */
+.modal-overlay{position:fixed;inset:0;
+  background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(6px);
+  z-index:1000;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity 0.25s}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal{
+  background:rgba(15,23,42,0.97);
+  border:1px solid var(--border2);
+  border-radius:16px;width:100%;max-width:500px;max-height:90vh;
+  overflow-y:auto;transform:translateY(20px) scale(0.97);transition:var(--transition);
+  box-shadow:0 24px 60px rgba(0,0,0,0.6)}
+.modal-overlay.show .modal{transform:translateY(0) scale(1)}
+.modal-header{padding:22px 22px 0;display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{font-size:20px;font-weight:800;color:var(--text)}
+.modal-close{width:30px;height:30px;border-radius:50%;
+  background:rgba(255,255,255,0.06);
+  border:none;color:var(--text2);font-size:18px;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;transition:var(--transition);line-height:1}
+.modal-close:hover{background:rgba(255,255,255,0.1);color:var(--text)}
+.modal-body{padding:18px 22px 22px}
+.form-field{margin-bottom:16px}
+.form-field label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:600}
+.form-field input,.form-field textarea,.form-field select{
+  width:100%;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border2);border-radius:var(--radius2);
+  padding:10px 13px;color:var(--text);font-size:14px;outline:none;transition:var(--transition);
+  font-family:inherit}
+.form-field input::placeholder,.form-field textarea::placeholder{color:var(--text3)}
+.form-field input:focus,.form-field textarea:focus,.form-field select:focus{
+  border-color:var(--primary);box-shadow:0 0 0 3px rgba(14,165,233,0.12)}
+.form-field textarea{resize:none;height:90px;line-height:1.6}
+.form-field select option{background:#1e293b;color:var(--text)}
+.char-count{font-size:12px;color:var(--text3);text-align:right;margin-top:4px}
+
+/* 状态选择 */
+.status-select{display:flex;gap:8px}
+.status-opt{flex:1;padding:9px;
+  border:1px solid var(--border);border-radius:var(--radius2);
+  text-align:center;cursor:pointer;transition:var(--transition);font-size:13px;font-weight:500;color:var(--text2)}
+.status-opt:hover{border-color:var(--primary)}
+.status-opt.sel-idea{border-color:#fbbf24;background:rgba(251,191,36,0.1);color:#fbbf24}
+.status-opt.sel-building{border-color:var(--primary);background:rgba(14,165,233,0.1);color:var(--primary)}
+.status-opt.sel-launched{border-color:#34d399;background:rgba(52,211,153,0.1);color:#34d399}
+.status-opt.unselected{opacity:0.4}
+
+/* 标签选择 */
+.tag-select{display:flex;gap:6px;flex-wrap:wrap}
+.tag-opt{padding:5px 12px;border-radius:20px;
+  border:1px solid var(--border);
+  background:transparent;color:var(--text2);font-size:12px;cursor:pointer;transition:var(--transition)}
+.tag-opt:hover{border-color:var(--primary);color:var(--primary)}
+.tag-opt.selected{background:rgba(14,165,233,0.15);border-color:var(--primary);color:var(--primary)}
+
+/* 登录注册 */
+.auth-tabs{display:flex;gap:0;margin-bottom:20px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  border-radius:var(--radius2);padding:3px}
+.auth-tab{flex:1;padding:9px;text-align:center;border-radius:7px;cursor:pointer;
+  font-size:14px;font-weight:600;color:var(--text2);transition:var(--transition)}
+.auth-tab.active{background:rgba(14,165,233,0.15);color:var(--primary);box-shadow:0 0 8px rgba(14,165,233,0.2)}
+.btn-auth{width:100%;padding:13px;border-radius:var(--radius2);
+  background:var(--gradient);
+  border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:var(--transition);
+  box-shadow:0 4px 14px rgba(14,165,233,0.3)}
+.btn-auth:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(14,165,233,0.45)}
+.captcha-row{display:flex;gap:10px;align-items:center}
+.captcha-row input{flex:1}
+.auth-social{margin-top:16px;text-align:center}
+.auth-divider{font-size:12px;color:var(--text3);margin-bottom:12px;position:relative}
+.auth-divider::before,.auth-divider::after{content:'';position:absolute;top:50%;width:35%;height:1px;background:var(--border)}
+.auth-divider::before{left:0}.auth-divider::after{right:0}
+.social-btns{display:flex;gap:8px}
+.social-btn{flex:1;padding:9px;border-radius:var(--radius2);
+  border:1px solid var(--border2);
+  background:rgba(255,255,255,0.04);color:var(--text2);font-size:13px;cursor:pointer;transition:var(--transition);
+  display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit}
+.social-btn:hover{border-color:var(--primary);color:var(--primary);background:rgba(14,165,233,0.06)}
+.auth-agree{display:flex;align-items:center;gap:7px;margin-bottom:14px;font-size:13px;color:var(--text2)}
+.auth-agree input[type=checkbox]{width:15px;height:15px;accent-color:var(--primary)}
+.auth-agree a{color:var(--primary);cursor:pointer}
+.auth-switch{text-align:center;margin-top:14px;font-size:13px;color:var(--text2)}
+.auth-switch a{color:var(--primary);cursor:pointer;font-weight:600}
+
+/* Toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:rgba(30,41,59,0.95);border:1px solid var(--border2);
+  backdrop-filter:blur(16px);
+  border-radius:var(--radius2);
+  padding:12px 24px;font-size:14px;font-weight:500;color:var(--text);
+  box-shadow:var(--shadow2);z-index:9999;transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{background:rgba(16,185,129,0.2);border-color:rgba(52,211,153,0.3);color:#34d399}
+.toast.error{background:rgba(244,63,94,0.2);border-color:rgba(244,63,94,0.3);color:#fb7185}
+
+/* ===== Footer ===== */
+#siteFooter{
+  background:rgba(15,23,42,0.95);
+  border-top:1px solid var(--border);
+  margin-top:60px;padding:40px 0 0;
+  backdrop-filter:blur(20px)}
+.footer-inner{max-width:1100px;margin:0 auto;padding:0 24px 32px;display:flex;gap:48px;align-items:flex-start}
+.footer-brand{flex:1;min-width:180px}
+.footer-logo{font-size:18px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px;
+  background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.footer-logo-icon{width:28px;height:28px;border-radius:6px;
+  background:var(--gradient);
+  display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.footer-slogan{font-size:13px;color:var(--text3);line-height:1.8;margin-bottom:14px}
+.footer-social{display:flex;gap:10px}
+.footer-social span{font-size:18px;cursor:pointer;opacity:0.4;transition:var(--transition);padding:5px;border-radius:6px}
+.footer-social span:hover{opacity:1;background:rgba(255,255,255,0.06)}
+.footer-links-group{display:flex;gap:40px;flex:2}
+.footer-col{display:flex;flex-direction:column;gap:10px;min-width:80px}
+.footer-col-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.footer-col a{font-size:13px;color:var(--text3);cursor:pointer;transition:var(--transition);text-decoration:none}
+.footer-col a:hover{color:var(--primary)}
+.footer-bottom{border-top:1px solid var(--border);padding:16px 24px;
+  display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--text3)}
+.footer-divider{color:var(--text3)}
+.footer-legal-link{color:var(--text3);cursor:pointer;text-decoration:none;transition:var(--transition)}
+.footer-legal-link:hover{color:var(--primary)}
+
+/* ===== 法律页 ===== */
+.legal-page{max-width:800px;margin:0 auto;padding:40px 24px 60px}
+.legal-header{text-align:center;padding:40px 0 30px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.legal-icon{font-size:44px;margin-bottom:14px}
+.legal-header h1{font-size:28px;font-weight:800;margin-bottom:8px;color:var(--text)}
+.legal-header p{font-size:13px;color:var(--text3)}
+.legal-content{display:flex;flex-direction:column;gap:24px}
+.legal-section h2{font-size:15px;font-weight:700;color:var(--primary);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.legal-section p{font-size:14px;color:var(--text2);line-height:1.9;margin-bottom:6px}
+.legal-section ul{padding-left:20px;margin-top:4px}
+.legal-section ul li{font-size:14px;color:var(--text2);line-height:1.9;margin-bottom:3px}
+.legal-footer-btn{text-align:center;margin-top:36px;padding-top:28px;border-top:1px solid var(--border)}
+.btn-back{padding:10px 24px;border-radius:var(--radius2);
+  border:1px solid var(--border2);
+  background:rgba(255,255,255,0.04);color:var(--text2);cursor:pointer;font-size:14px;transition:var(--transition);font-family:inherit}
+.btn-back:hover{border-color:var(--primary);color:var(--primary)}
+
+/* 数据概览小行 */
+.plaza-stat-row{display:flex;justify-content:space-between;font-size:14px;padding:4px 0}
+.plaza-stat-row span:first-child{color:var(--text2)}
+.plaza-stat-row span:last-child{font-weight:700;color:var(--text)}
+
+/* ===== 个人主页 ===== */
+.profile-page{max-width:960px;margin:0 auto;padding:32px 24px 60px}
+.profile-header{
+  background:linear-gradient(135deg,rgba(14,165,233,0.1),rgba(139,92,246,0.1));
+  border:1px solid var(--border2);border-radius:16px;padding:32px;
+  display:flex;gap:24px;align-items:flex-start;margin-bottom:24px;position:relative;overflow:hidden}
+.profile-header::before{content:'';position:absolute;inset:0;opacity:0.03;background:var(--gradient)}
+.profile-avatar-wrap{position:relative;flex-shrink:0}
+.profile-avatar{width:80px;height:80px;border-radius:50%;
+  background:var(--gradient);
+  display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;
+  border:3px solid rgba(14,165,233,0.4);box-shadow:0 0 20px rgba(14,165,233,0.3);cursor:pointer}
+.profile-edit-avatar{position:absolute;bottom:-2px;right:-2px;width:24px;height:24px;border-radius:50%;
+  background:var(--primary);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;
+  font-size:12px;cursor:pointer;color:#fff}
+.profile-info{flex:1}
+.profile-name{font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.profile-name-edit{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0}
+.profile-name-edit:hover{color:var(--primary)}
+.profile-join{font-size:13px;color:var(--text3);margin-bottom:12px}
+.profile-score-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.profile-level-badge{display:inline-flex;align-items:center;gap:6px;
+  padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;
+  background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(251,191,36,0.1));
+  border:1px solid rgba(245,158,11,0.3);color:#fbbf24}
+.profile-score{font-size:13px;color:var(--text2)}
+.profile-score b{color:var(--primary);font-weight:700}
+.profile-stats{display:flex;gap:0;margin-top:16px;background:rgba(255,255,255,0.04);border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.profile-stat{flex:1;text-align:center;padding:12px 8px;border-right:1px solid var(--border)}
+.profile-stat:last-child{border-right:none}
+.profile-stat-num{font-size:20px;font-weight:800;color:var(--text)}
+.profile-stat-label{font-size:12px;color:var(--text3);margin-top:2px}
+.profile-tabs{display:flex;gap:2px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius2);padding:3px;margin-bottom:20px}
+.profile-tab-btn{flex:1;padding:8px;border:none;background:transparent;color:var(--text2);
+  border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;transition:var(--transition)}
+.profile-tab-btn.active{background:rgba(14,165,233,0.15);color:var(--primary);font-weight:600}
+.profile-ideas-grid{display:flex;flex-direction:column;gap:2px}
+
+/* ===== 等级系统 ===== */
+.level-bar-wrap{margin-top:8px}
+.level-bar-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:5px}
+.level-bar-track{height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.level-bar-fill{height:100%;background:var(--gradient);border-radius:3px;transition:width .6s ease}
+
+/* ===== 详情弹窗大改版 ===== */
+.idea-detail-modal{max-width:720px}
+.detail-cover{
+  background:linear-gradient(135deg,rgba(14,165,233,0.12),rgba(139,92,246,0.08));
+  border-bottom:1px solid var(--border);padding:24px 24px 20px;
+  display:flex;gap:18px;align-items:flex-start;position:relative}
+.detail-icon-lg{width:72px;height:72px;border-radius:14px;font-size:36px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  border:1px solid var(--border2);background:rgba(255,255,255,0.04)}
+.detail-main-info{flex:1;min-width:0}
+.detail-title-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.detail-title{font-size:22px;font-weight:800;color:var(--text);line-height:1.3;flex:1}
+.detail-meta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:13px;color:var(--text3)}
+.detail-author-link{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text2);font-weight:600;font-size:13px}
+.detail-author-link:hover{color:var(--primary)}
+.detail-author-avatar{width:22px;height:22px;border-radius:50%;
+  background:var(--gradient);display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#fff}
+.detail-vote-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.detail-tagline{font-size:15px;color:var(--text2);line-height:1.8;padding:16px 24px;border-bottom:1px solid var(--border)}
+.detail-link-bar{padding:10px 24px;display:flex;align-items:center;gap:12px;font-size:13px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)}
+.detail-link-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;
+  background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.2);color:var(--primary);
+  text-decoration:none;font-size:13px;font-weight:600;transition:var(--transition)}
+.detail-link-btn:hover{background:rgba(14,165,233,0.2);transform:translateY(-1px)}
+.detail-delete-btn{margin-left:auto;padding:5px 12px;border-radius:20px;
+  border:1px solid rgba(244,63,94,0.25);background:rgba(244,63,94,0.08);
+  color:#fb7185;font-size:12px;cursor:pointer;transition:var(--transition)}
+.detail-delete-btn:hover{background:rgba(244,63,94,0.18);border-color:rgba(244,63,94,0.4)}
+.detail-body{padding:0 24px 16px;max-height:56vh;overflow-y:auto}
+
+/* 讨论区帖子详情 */
+.post-detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
+  z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .25s}
+.post-detail-overlay.show{opacity:1;pointer-events:all}
+.post-detail-modal{background:rgba(15,23,42,0.97);border:1px solid var(--border2);
+  border-radius:16px;width:100%;max-width:680px;max-height:88vh;overflow:hidden;
+  display:flex;flex-direction:column;transform:translateY(20px) scale(.97);transition:var(--transition);
+  box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.post-detail-overlay.show .post-detail-modal{transform:none}
+.post-detail-head{padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-shrink:0}
+.post-detail-body{flex:1;overflow-y:auto;padding:20px 22px}
+
+/* ===== 响应式 ===== */
+@media(max-width:960px){
+  .main-layout{grid-template-columns:1fr;gap:0}
+  .sidebar{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding-top:20px}
+  .disc-layout{grid-template-columns:1fr}
+  .profile-header{flex-direction:column;align-items:center;text-align:center}
+  .profile-stats{max-width:360px;margin:16px auto 0}
+  .profile-score-row{justify-content:center}
+}
+@media(max-width:640px){
+  .hero h1{font-size:32px}
+  .hero{padding:52px 16px 40px}
+  .main-layout{padding:16px}
+  .disc-layout{padding:16px}
+  .nav-center{display:none}
+  .sidebar{grid-template-columns:1fr}
+  .hero-stats{gap:24px}
+  .stat-num{font-size:24px}
+  .footer-inner{flex-direction:column;gap:28px}
+  .footer-links-group{flex-direction:column;gap:20px}
+  .detail-cover{flex-direction:column;align-items:center;text-align:center}
+  .detail-vote-col{flex-direction:row}
+}
+</style>
+</head>
+<body>
+<!-- 星空背景 -->
+<canvas id="starCanvas"></canvas>
+<div class="bg-glow"></div>
+<!-- ========== 导航栏 ========== -->
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">
+    <div class="nav-logo-icon">✨</div>
+    <div class="nav-logo-text">想法星球</div>
+  </div>
+  <div class="nav-center nav-links">
+    <a onclick="showPage('home')" class="active" id="nav-home">首页</a>
+    <a onclick="showPage('plaza')" id="nav-plaza">想法广场</a>
+    <a onclick="showPage('discuss')" id="nav-discuss">讨论区</a>
+  </div>
+  <div class="nav-right">
+    <div id="navRight" style="display:flex;align-items:center;gap:10px;">
+      <button class="btn-login" onclick="openAuth('login')">登录</button>
+      <button class="btn-submit-idea" onclick="openSubmitIdea()">✏️ 发布想法</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ========== 首页 ========== -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-badge">✨ AI时代，好想法比执行更稀缺</div>
+    <h1>发现下一个<br><span class="gradient-text">改变世界的好想法</span></h1>
+    <p>汇聚创意人、开发者、产品经理——分享你的想法，与志同道合者一起把它变成现实</p>
+    <div class="hero-actions">
+      <button class="btn-hero-primary" onclick="openSubmitIdea()">✏️ 分享我的想法</button>
+      <button class="btn-hero-secondary" onclick="showPage('plaza')">浏览所有想法 →</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item"><div class="stat-num">1,280</div><div class="stat-label">个想法</div></div>
+      <div class="stat-item"><div class="stat-num">8,600</div><div class="stat-label">位创意人</div></div>
+      <div class="stat-item"><div class="stat-num">42,000</div><div class="stat-label">次点赞</div></div>
+      <div class="stat-item"><div class="stat-num">186</div><div class="stat-label">个已上线</div></div>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div class="main-content">
+      <div class="content-header">
+        <div class="tab-group">
+          <button class="tab-btn active" id="tab-today" onclick="switchTab('today',this)">🔥 今日榜</button>
+          <button class="tab-btn" id="tab-week" onclick="switchTab('week',this)">📈 本周</button>
+          <button class="tab-btn" id="tab-new" onclick="switchTab('new',this)">🆕 最新</button>
+        </div>
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="搜索想法…" id="searchInput" oninput="handleSearch(this.value)">
+        </div>
+      </div>
+      <div class="cat-tags" id="homeCatTags">
+        <button class="cat-tag active" onclick="filterByTag('全部',this)">全部</button>
+        <button class="cat-tag" onclick="filterByTag('AI工具',this)">🤖 AI工具</button>
+        <button class="cat-tag" onclick="filterByTag('效率工具',this)">⚡ 效率工具</button>
+        <button class="cat-tag" onclick="filterByTag('社交',this)">💬 社交</button>
+        <button class="cat-tag" onclick="filterByTag('娱乐',this)">🎮 娱乐</button>
+        <button class="cat-tag" onclick="filterByTag('内容创作',this)">✍️ 内容创作</button>
+        <button class="cat-tag" onclick="filterByTag('电商',this)">🛍️ 电商</button>
+        <button class="cat-tag" onclick="filterByTag('教育',this)">📚 教育</button>
+        <button class="cat-tag" onclick="filterByTag('健康',this)">💊 健康</button>
+        <button class="cat-tag" onclick="filterByTag('硬件',this)">🔧 硬件</button>
+      </div>
+      <div class="idea-list" id="homeIdeaList"></div>
+    </div>
+
+    <div class="sidebar">
+      <div class="cta-card">
+        <h3>💡 有个好想法？</h3>
+        <p>AI时代，一个好想法就可能改变一切。把它分享出来，让更多人看见。</p>
+        <button class="btn-cta" onclick="openSubmitIdea()">立即发布想法</button>
+      </div>
+      <div class="sidebar-block">
+        <div class="sidebar-block-title">📂 热门分类</div>
+        <div class="sidebar-block-body">
+          <div class="cat-list" id="sidebarCats"></div>
+        </div>
+      </div>
+      <div class="sidebar-block">
+        <div class="sidebar-block-title">🔥 今日最热</div>
+        <div class="sidebar-block-body">
+          <div class="hot-idea-list" id="sidebarHotList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 想法广场 ========== -->
+<div class="page" id="page-plaza">
+  <div class="page-header">
+    <div class="page-header-inner">
+      <h1>💡 想法广场</h1>
+      <p>所有人分享的创意想法，找到你感兴趣的，投票支持它</p>
+    </div>
+  </div>
+  <div class="main-layout">
+    <div class="main-content">
+      <div class="content-header">
+        <div class="tab-group">
+          <button class="tab-btn active" id="plaza-tab-today" onclick="switchPlazaTab('today',this)">🔥 最热</button>
+          <button class="tab-btn" id="plaza-tab-new" onclick="switchPlazaTab('new',this)">🆕 最新</button>
+          <button class="tab-btn" id="plaza-tab-launched" onclick="switchPlazaTab('launched',this)">✅ 已上线</button>
+        </div>
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="搜索想法…" id="plazaSearchInput" oninput="handlePlazaSearch(this.value)">
+        </div>
+      </div>
+      <div class="cat-tags" id="plazaCatTags">
+        <button class="cat-tag active" onclick="filterPlazaByTag('全部',this)">全部</button>
+        <button class="cat-tag" onclick="filterPlazaByTag('AI工具',this)">🤖 AI工具</button>
+        <button class="cat-tag" onclick="filterPlazaByTag('效率工具',this)">⚡ 效率工具</button>
+        <button class="cat-tag" onclick="filterPlazaByTag('社交',this)">💬 社交</button>
+        <button class="cat-tag" onclick="filterPlazaByTag('娱乐',this)">🎮 娱乐</button>
+        <button class="cat-tag" onclick="filterPlazaByTag('内容创作',this)">✍️ 内容创作</button>
+        <button class="cat-tag" onclick="filterPlazaByTag('电商',this)">🛍️ 电商</button>
+        <button class="cat-tag" onclick="filterPlazaByTag('教育',this)">📚 教育</button>
+        <button class="cat-tag" onclick="filterPlazaByTag('健康',this)">💊 健康</button>
+        <button class="cat-tag" onclick="filterPlazaByTag('硬件',this)">🔧 硬件</button>
+      </div>
+      <div class="idea-list" id="plazaIdeaList"></div>
+    </div>
+    <div class="sidebar">
+      <div class="cta-card">
+        <h3>💡 有个好想法？</h3>
+        <p>把你的想法分享给大家，也许下一个改变世界的产品就是它。</p>
+        <button class="btn-cta" onclick="openSubmitIdea()">立即发布</button>
+      </div>
+      <div class="sidebar-block">
+        <div class="sidebar-block-title">📊 数据概览</div>
+        <div class="sidebar-block-body">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="plaza-stat-row"><span>💡 想法阶段</span><span id="count-idea">-</span></div>
+            <div class="plaza-stat-row"><span>🔨 开发中</span><span id="count-building">-</span></div>
+            <div class="plaza-stat-row"><span>✅ 已上线</span><span id="count-launched">-</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 讨论区 ========== -->
+<div class="page" id="page-discuss">
+  <div class="page-header">
+    <div class="page-header-inner">
+      <h1>💬 讨论区</h1>
+      <p>和创意人、开发者一起探讨产品与想法，碰撞思维的火花</p>
+    </div>
+  </div>
+  <div class="disc-layout">
+    <div class="disc-main">
+      <div class="disc-top">
+        <h2>全部讨论</h2>
+        <button class="btn-post" onclick="openPostModal()">✏️ 发起讨论</button>
+      </div>
+      <div class="disc-cats">
+        <button class="disc-cat-btn active" onclick="filterDisc('全部',this)">全部</button>
+        <button class="disc-cat-btn" onclick="filterDisc('想法探讨',this)">💡 想法探讨</button>
+        <button class="disc-cat-btn" onclick="filterDisc('产品评测',this)">⭐ 产品评测</button>
+        <button class="disc-cat-btn" onclick="filterDisc('求合伙人',this)">🤝 求合伙人</button>
+        <button class="disc-cat-btn" onclick="filterDisc('技术问答',this)">💻 技术问答</button>
+        <button class="disc-cat-btn" onclick="filterDisc('经验分享',this)">📖 经验分享</button>
+      </div>
+      <div class="post-list" id="postList"></div>
+    </div>
+    <div class="sidebar">
+      <div class="cta-card">
+        <h3>🤝 寻找合伙人？</h3>
+        <p>有想法没技术？有技术没想法？在这里找到你的另一半。</p>
+        <button class="btn-cta" onclick="openPostModal()">发起讨论</button>
+      </div>
+      <div class="sidebar-block">
+        <div class="sidebar-block-title">🔥 热议话题</div>
+        <div class="sidebar-block-body">
+          <div id="hotTopics"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 个人主页 ========== -->
+<div class="page" id="page-profile">
+  <div class="profile-page">
+    <div class="profile-header">
+      <div class="profile-avatar-wrap">
+        <div class="profile-avatar" id="profileAvatar" onclick="openEditProfile()">我</div>
+        <div class="profile-edit-avatar" onclick="openEditProfile()">✏️</div>
+      </div>
+      <div class="profile-info">
+        <div class="profile-name">
+          <span id="profileName">-</span>
+          <span id="profileLevelBadge" class="profile-level-badge">💡 灵光一现</span>
+          <button class="profile-name-edit" onclick="openEditProfile()">✏️ 编辑</button>
+        </div>
+        <div class="profile-join" id="profileJoin">加入时间：-</div>
+        <div class="profile-score-row">
+          <div class="profile-score">想法值：<b id="profileScore">0</b></div>
+        </div>
+        <div class="level-bar-wrap" style="max-width:320px;margin-top:8px">
+          <div class="level-bar-label"><span id="levelCurLabel">灵光一现</span><span id="levelNextLabel">下一级：思维泉涌</span></div>
+          <div class="level-bar-track"><div class="level-bar-fill" id="levelBarFill" style="width:0%"></div></div>
+        </div>
+        <div class="profile-stats" style="max-width:360px;margin-top:14px">
+          <div class="profile-stat"><div class="profile-stat-num" id="profileIdeaCount">0</div><div class="profile-stat-label">发布想法</div></div>
+          <div class="profile-stat"><div class="profile-stat-num" id="profileCommentCount">0</div><div class="profile-stat-label">评论</div></div>
+          <div class="profile-stat"><div class="profile-stat-num" id="profileVoteGot">0</div><div class="profile-stat-label">获得票数</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="profile-tabs">
+      <button class="profile-tab-btn active" id="ptab-ideas" onclick="switchProfileTab('ideas',this)">💡 我的想法</button>
+      <button class="profile-tab-btn" id="ptab-voted" onclick="switchProfileTab('voted',this)">⬆️ 已投票</button>
+    </div>
+    <div id="profileContent" class="profile-ideas-grid"></div>
+  </div>
+</div>
+
+<!-- ========== 模态框：编辑资料 ========== -->
+<div class="modal-overlay" id="editProfileModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h2>✏️ 编辑资料</h2>
+      <button class="modal-close" onclick="closeModal('editProfileModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>昵称（2-20字符）</label>
+        <input type="text" id="editNickname" maxlength="20" placeholder="请输入昵称">
+      </div>
+      <div class="form-field">
+        <label>头像（输入一个 Emoji 作为头像）</label>
+        <input type="text" id="editAvatar" maxlength="4" placeholder="🚀 🎨 👾 🌟" style="font-size:22px;text-align:center">
+      </div>
+      <button class="btn-auth" onclick="saveProfile()">保存修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 讨论帖详情弹窗 ========== -->
+<div class="post-detail-overlay" id="postDetailOverlay">
+  <div class="post-detail-modal">
+    <div class="post-detail-head">
+      <div style="flex:1;min-width:0">
+        <div id="pdCatTag" class="post-cat-tag" style="margin-bottom:6px;display:inline-block"></div>
+        <div id="pdTitle" style="font-size:17px;font-weight:800;color:var(--text);line-height:1.4"></div>
+        <div id="pdMeta" style="font-size:12px;color:var(--text3);margin-top:5px"></div>
+      </div>
+      <button class="modal-close" style="flex-shrink:0" onclick="closePostDetail()">×</button>
+    </div>
+    <div class="post-detail-body">
+      <div id="pdContent" style="font-size:14px;color:var(--text2);line-height:1.9;margin-bottom:20px;white-space:pre-wrap"></div>
+      <div style="border-top:1px solid var(--border);padding-top:18px">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px">💬 评论 <span id="pdCommentCount" style="color:var(--text3);font-weight:400;font-size:13px">0</span></div>
+        <div id="pdCommentList"></div>
+        <div id="pdCommentInput"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 用户协议 ========== -->
+<div class="page" id="page-terms">
+  <div class="legal-page">
+    <div class="legal-header">
+      <div class="legal-icon">📋</div>
+      <h1>用户协议</h1>
+      <p>最后更新：2026年1月1日 &nbsp;·&nbsp; 请仔细阅读以下条款</p>
+    </div>
+    <div class="legal-content">
+      <div class="legal-section"><h2>一、总则</h2><p>欢迎使用想法星球（以下简称"本平台"）。本协议是您与想法星球运营方之间关于您使用本平台服务所订立的协议。注册即表示您已阅读并同意本协议全部条款。</p></div>
+      <div class="legal-section"><h2>二、账户注册</h2><p><strong>2.1</strong> 注册时请提供真实有效信息并妥善保管账户安全。<br><strong>2.2</strong> 每个账号对应唯一用户，禁止冒用他人身份注册。<br><strong>2.3</strong> 如发现账号被盗，请立即联系客服。</p></div>
+      <div class="legal-section"><h2>三、用户行为规范</h2><p>您不得发布违法内容、虚假信息、侵权内容，不得攻击平台系统或骚扰其他用户。违规将导致账号封禁。</p></div>
+      <div class="legal-section"><h2>四、知识产权</h2><p>您在平台发布的内容归您所有，同时授权本平台在平台内展示使用。平台自有内容未经许可不得转载。</p></div>
+      <div class="legal-section"><h2>五、免责声明</h2><p>本平台内容仅供参考，不构成投资或商业建议。不可抗力导致的服务中断，平台不承担赔偿责任。</p></div>
+      <div class="legal-section"><h2>六、联系我们</h2><p>客服邮箱：support@xiangfaxingqiu.com</p></div>
+    </div>
+    <div class="legal-footer-btn"><button class="btn-back" onclick="showPage('home')">← 返回首页</button></div>
+  </div>
+</div>
+
+<!-- ========== 隐私政策 ========== -->
+<div class="page" id="page-privacy">
+  <div class="legal-page">
+    <div class="legal-header">
+      <div class="legal-icon">🔒</div>
+      <h1>隐私政策</h1>
+      <p>最后更新：2026年1月1日 &nbsp;·&nbsp; 我们重视您的隐私保护</p>
+    </div>
+    <div class="legal-content">
+      <div class="legal-section"><h2>一、信息收集</h2><p>我们收集您注册时提供的昵称、密码（加密存储），以及您发布的内容和浏览行为（设备信息、访问日志）。</p></div>
+      <div class="legal-section"><h2>二、信息使用</h2><p>用于提供服务、保障账户安全、推送您感兴趣的内容（可关闭）、优化平台体验。</p></div>
+      <div class="legal-section"><h2>三、信息安全</h2><p>采用 HTTPS 加密传输和访问控制保护您的数据，存储于中国境内服务器。账号注销后15个工作日内删除个人信息。</p></div>
+      <div class="legal-section"><h2>四、您的权利</h2><p>您可查阅、修改、删除个人信息，可拒绝营销推送。如需行使权利，请联系：privacy@xiangfaxingqiu.com</p></div>
+      <div class="legal-section"><h2>五、Cookie</h2><p>我们使用 Cookie 保持登录状态和偏好设置，您可通过浏览器设置清除。</p></div>
+    </div>
+    <div class="legal-footer-btn"><button class="btn-back" onclick="showPage('home')">← 返回首页</button></div>
+  </div>
+</div>
+
+<!-- ========== Footer ========== -->
+<footer id="siteFooter">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <div class="footer-logo-icon">✨</div>
+        想法星球
+      </div>
+      <p class="footer-slogan">AI时代，好想法比执行更稀缺。<br>在这里分享你的创意，找到你的同行者。</p>
+      <div class="footer-social">
+        <span title="微信公众号">💬</span>
+        <span title="微博">📱</span>
+        <span title="即刻">⚡</span>
+        <span title="X / Twitter">🐦</span>
+      </div>
+    </div>
+    <div class="footer-links-group">
+      <div class="footer-col">
+        <div class="footer-col-title">发现</div>
+        <a onclick="showPage('home')">首页</a>
+        <a onclick="showPage('plaza')">想法广场</a>
+        <a onclick="showPage('discuss')">讨论区</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">参与</div>
+        <a onclick="openSubmitIdea()">发布想法</a>
+        <a onclick="openAuth('register')">免费注册</a>
+        <a onclick="openPostModal()">发起讨论</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">关于</div>
+        <a>关于我们</a>
+        <a onclick="showPage('terms')">用户协议</a>
+        <a onclick="showPage('privacy')">隐私政策</a>
+        <a>联系我们</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 想法星球 版权所有</span>
+    <span class="footer-divider">|</span>
+    <a onclick="showPage('terms')" class="footer-legal-link">用户协议</a>
+    <span class="footer-divider">|</span>
+    <a onclick="showPage('privacy')" class="footer-legal-link">隐私政策</a>
+    <span class="footer-divider">|</span>
+    <span>沪ICP备XXXXXXXX号</span>
+  </div>
+</footer>
+
+<!-- ========== 模态框：发布想法 ========== -->
+<div class="modal-overlay" id="submitIdeaModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h2>💡 发布你的想法</h2>
+      <button class="modal-close" onclick="closeModal('submitIdeaModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>想法名称 *</label>
+        <input type="text" id="idea-name" placeholder="简洁有力的名字，如：AI日记助手" maxlength="40">
+        <div class="char-count" id="idea-name-count">0/40</div>
+      </div>
+      <div class="form-field">
+        <label>一句话描述 *</label>
+        <input type="text" id="idea-tagline" placeholder="用一句话说清楚这个想法解决什么问题" maxlength="80">
+        <div class="char-count" id="idea-tagline-count">0/80</div>
+      </div>
+      <div class="form-field">
+        <label>详细描述</label>
+        <textarea id="idea-detail" placeholder="详细描述这个想法的背景、目标用户、核心功能…"></textarea>
+      </div>
+      <div class="form-field">
+        <label>当前状态 *</label>
+        <div class="status-select" id="statusSelect">
+          <div class="status-opt sel-idea" data-status="idea" onclick="selectStatus(this)">💡 想法</div>
+          <div class="status-opt" data-status="building" onclick="selectStatus(this)">🔨 开发中</div>
+          <div class="status-opt" data-status="launched" onclick="selectStatus(this)">✅ 已上线</div>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>分类标签 *（最多选2个）</label>
+        <div class="tag-select" id="tagSelect">
+          <div class="tag-opt" data-tag="AI工具">🤖 AI工具</div>
+          <div class="tag-opt" data-tag="效率工具">⚡ 效率工具</div>
+          <div class="tag-opt" data-tag="社交">💬 社交</div>
+          <div class="tag-opt" data-tag="娱乐">🎮 娱乐</div>
+          <div class="tag-opt" data-tag="内容创作">✍️ 内容创作</div>
+          <div class="tag-opt" data-tag="电商">🛍️ 电商</div>
+          <div class="tag-opt" data-tag="教育">📚 教育</div>
+          <div class="tag-opt" data-tag="健康">💊 健康</div>
+          <div class="tag-opt" data-tag="硬件">🔧 硬件</div>
+          <div class="tag-opt" data-tag="其他">📦 其他</div>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>链接（可选）</label>
+        <input type="url" id="idea-link" placeholder="网站、GitHub、原型图链接…">
+      </div>
+      <div class="form-field">
+        <label>选个 Emoji 代表你的想法</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="iconSelect">
+          <span class="icon-opt selected" data-icon="💡" onclick="selectIcon(this)" style="font-size:24px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid var(--primary);background:rgba(14,165,233,0.1)">💡</span>
+          <span class="icon-opt" data-icon="🚀" onclick="selectIcon(this)" style="font-size:24px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid var(--border)">🚀</span>
+          <span class="icon-opt" data-icon="🤖" onclick="selectIcon(this)" style="font-size:24px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid var(--border)">🤖</span>
+          <span class="icon-opt" data-icon="🎮" onclick="selectIcon(this)" style="font-size:24px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid var(--border)">🎮</span>
+          <span class="icon-opt" data-icon="📱" onclick="selectIcon(this)" style="font-size:24px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid var(--border)">📱</span>
+          <span class="icon-opt" data-icon="🌍" onclick="selectIcon(this)" style="font-size:24px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid var(--border)">🌍</span>
+          <span class="icon-opt" data-icon="💊" onclick="selectIcon(this)" style="font-size:24px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid var(--border)">💊</span>
+          <span class="icon-opt" data-icon="📚" onclick="selectIcon(this)" style="font-size:24px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid var(--border)">📚</span>
+          <span class="icon-opt" data-icon="⚡" onclick="selectIcon(this)" style="font-size:24px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid var(--border)">⚡</span>
+          <span class="icon-opt" data-icon="🎯" onclick="selectIcon(this)" style="font-size:24px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid var(--border)">🎯</span>
+        </div>
+      </div>
+      <button class="btn-auth" onclick="submitIdea()" style="margin-top:6px">发布想法 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 模态框：登录/注册 ========== -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="authTitle">欢迎加入想法星球</h2>
+      <button class="modal-close" onclick="closeModal('authModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">登录</div>
+        <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">注册</div>
+      </div>
+      <div id="loginForm">
+        <div class="form-field"><label>昵称</label><input type="text" id="login-name" placeholder="请输入昵称"></div>
+        <div class="form-field"><label>密码</label><input type="password" id="login-pwd" placeholder="请输入密码"></div>
+        <button class="btn-auth" onclick="doLogin()" style="margin-bottom:14px">登录</button>
+        <div class="auth-social">
+          <div class="auth-divider">第三方登录</div>
+          <div class="social-btns">
+            <button class="social-btn" onclick="socialLogin('微信')">💬 微信</button>
+            <button class="social-btn" onclick="socialLogin('QQ')">🐧 QQ</button>
+          </div>
+        </div>
+        <div class="auth-switch">没有账号？<a onclick="switchAuthTab('register')">立即注册</a></div>
+      </div>
+      <div id="registerForm" style="display:none">
+        <div class="form-field"><label>昵称 *</label><input type="text" id="reg-name" placeholder="给自己起个好听的名字"></div>
+        <div class="form-field"><label>设置密码 *</label><input type="password" id="reg-pwd" placeholder="至少8位，包含字母和数字"></div>
+        <div class="form-field">
+          <label>图形验证码 *</label>
+          <div class="captcha-row">
+            <input type="text" id="reg-captcha" placeholder="请输入验证码" maxlength="4" style="letter-spacing:4px">
+            <canvas id="captchaCanvas" width="110" height="40" onclick="refreshCaptcha()" style="cursor:pointer;border-radius:6px;border:1px solid var(--border2)" title="点击刷新"></canvas>
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px">点击图片刷新验证码</div>
+        </div>
+        <div class="form-field" style="margin-bottom:8px">
+          <label>手机号 <span style="font-size:12px;color:var(--text3)">（选填）</span></label>
+          <input type="tel" id="reg-phone" placeholder="选填">
+        </div>
+        <div class="auth-agree">
+          <input type="checkbox" id="agreeCheck" checked>
+          <span>我已阅读并同意 <a onclick="closeModal('authModal');showPage('terms')">《用户协议》</a> 和 <a onclick="closeModal('authModal');showPage('privacy')">《隐私政策》</a></span>
+        </div>
+        <button class="btn-auth" onclick="doRegister()" style="margin-bottom:12px">注册并加入</button>
+        <div class="auth-switch">已有账号？<a onclick="switchAuthTab('login')">立即登录</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 模态框：发布讨论 ========== -->
+<div class="modal-overlay" id="postModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>✏️ 发起讨论</h2>
+      <button class="modal-close" onclick="closeModal('postModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>选择分类</label>
+        <div class="tag-select" id="postCatSelect">
+          <div class="tag-opt selected" data-cat="想法探讨">💡 想法探讨</div>
+          <div class="tag-opt" data-cat="产品评测">⭐ 产品评测</div>
+          <div class="tag-opt" data-cat="求合伙人">🤝 求合伙人</div>
+          <div class="tag-opt" data-cat="技术问答">💻 技术问答</div>
+          <div class="tag-opt" data-cat="经验分享">📖 经验分享</div>
+        </div>
+      </div>
+      <div class="form-field"><label>标题 *</label><input type="text" id="post-title-input" placeholder="一个吸引人的标题…"></div>
+      <div class="form-field"><label>内容 *</label><textarea id="post-content-input" style="height:130px" placeholder="分享你的想法、问题或经验…"></textarea></div>
+      <button class="btn-auth" onclick="submitPost()">发布 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 模态框：想法详情 ========== -->
+<div class="modal-overlay" id="ideaDetailModal">
+  <div class="modal idea-detail-modal" style="max-width:720px;padding:0;overflow:hidden">
+    <div id="ideaDetailBody"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+<script>
+// ============================================================
+// API 层
+// ============================================================
+const API = '/api';
+
+async function apiRequest(path, options = {}) {
+  const token = localStorage.getItem('xfxq_token');
+  const headers = { ...(options.headers || {}) };
+  if (options.body) headers['Content-Type'] = 'application/json';
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(API + path, { ...options, headers });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '请求失败');
+  return data;
+}
+
+// ============================================================
+// 星空粒子背景
+// ============================================================
+(function initStars(){
+  const canvas = document.getElementById('starCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [], particles = [];
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // 生成星星
+  for(let i=0;i<160;i++){
+    stars.push({
+      x: Math.random()*2000, y: Math.random()*1200,
+      r: Math.random()*1.2+0.3,
+      a: Math.random(),
+      speed: Math.random()*0.003+0.001
+    });
+  }
+
+  // 漂浮粒子
+  function createParticle(){
+    const colors = ['rgba(14,165,233,','rgba(139,92,246,','rgba(244,63,94,'];
+    const c = colors[Math.floor(Math.random()*colors.length)];
+    return {
+      x: Math.random()*W, y: Math.random()*H,
+      vx: (Math.random()-0.5)*0.3, vy: -Math.random()*0.5-0.1,
+      r: Math.random()*2+1, life: 1,
+      decay: Math.random()*0.003+0.001,
+      color: c
+    };
+  }
+  for(let i=0;i<40;i++) particles.push(createParticle());
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // 画星星
+    stars.forEach(s=>{
+      s.a += s.speed;
+      const alpha = (Math.sin(s.a)+1)/2*0.8+0.1;
+      ctx.beginPath();
+      ctx.arc(s.x % W, s.y % H, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fill();
+    });
+
+    // 画漂浮粒子
+    particles.forEach((p,i)=>{
+      p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+      if(p.life <= 0 || p.y < -10){
+        particles[i] = createParticle();
+        particles[i].y = H + 5;
+        return;
+      }
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = p.color + p.life*0.6 + ')';
+      ctx.fill();
+    });
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ============================================================
+// 数据层（保留 discussData 和 hotTopics 为静态，想法数据从 API 加载）
+// ============================================================
+let ideasData = []; // 从 API 加载
+
+const discussData = [
+  {id:1,avatar:'👨‍💻',avatarBg:'#8b5cf6',author:'Indie Hacker老李',cat:'想法探讨',
+   title:'AI时代，什么样的想法最值得做？我总结了3个判断标准',
+   excerpt:'做了半年独立产品，踩了很多坑。总结下来，在AI时代值得做的产品要满足：1.需求真实且高频 2.AI能大幅降低成本 3.有社区属性能自增长...',
+   likes:312,comments:88,views:4200,time:'2小时前'},
+  {id:2,avatar:'👩‍🎨',avatarBg:'#f43f5e',author:'产品设计师小葵',cat:'求合伙人',
+   title:'【急招】UI/UX设计师有完整的SaaS产品想法，找技术合伙人',
+   excerpt:'我是有6年经验的产品设计师，已经完成了完整的产品原型和商业计划。想法是一个面向中小企业的客户服务AI工具，月潜在市场规模超千亿...',
+   likes:89,comments:34,views:1800,time:'4小时前'},
+  {id:3,avatar:'🧑‍🔬',avatarBg:'#10b981',author:'AI研究员',cat:'技术问答',
+   title:'用Cursor做了个AI产品，但发现推理成本太高，有什么优化方案？',
+   excerpt:'最近用Cursor快速做了个AI写作助手，用户增长还不错，但API成本已经快超过收入了。有没有做过类似产品的朋友分享一下降本经验？',
+   likes:156,comments:67,views:2900,time:'昨天'},
+  {id:4,avatar:'💼',avatarBg:'#f59e0b',author:'连续创业者老王',cat:'经验分享',
+   title:'我的AI产品从0到月收入5万的完整复盘（附详细数据）',
+   excerpt:'2025年10月开始做AI写作工具，历经3个月的冷启动，现在每月稳定收入5万+。这篇文章把整个过程完整复盘，包括选品、冷启动、定价、获客的所有细节...',
+   likes:445,comments:203,views:9800,time:'2天前'},
+  {id:5,avatar:'🚀',avatarBg:'#0ea5e9',author:'ProductHunter',cat:'产品评测',
+   title:'用了20款AI工具，总结：哪些是真正提效的，哪些是智商税',
+   excerpt:'花了3个月系统评测了市面上最流行的AI工具，分类整理了各自的优缺点和适用场景。结论是：80%的AI工具都是换皮，真正值得付费的只有5款...',
+   likes:389,comments:127,views:7600,time:'3天前'},
+];
+
+const hotTopicsData = [
+  'AI时代什么样的想法最有价值？',
+  '独立开发者如何找到第一批种子用户',
+  '有想法没技术？AI开发工具推荐',
+  '产品冷启动：零成本获得前100个用户',
+  '我是如何在3个月内上线第一个产品的',
+  '如何验证一个想法是否值得做',
+];
+
+const catStats = [
+  {icon:'🤖',name:'AI工具',count:0},
+  {icon:'⚡',name:'效率工具',count:0},
+  {icon:'💬',name:'社交',count:0},
+  {icon:'✍️',name:'内容创作',count:0},
+  {icon:'🎮',name:'娱乐',count:0},
+  {icon:'📚',name:'教育',count:0},
+  {icon:'💊',name:'健康',count:0},
+  {icon:'🛍️',name:'电商',count:0},
+  {icon:'🔧',name:'硬件',count:0},
+];
+
+// ============================================================
+// 状态
+// ============================================================
+const state = {
+  currentUser: null, homeTab:'today', homeTag:'全部',
+  plazaTab:'today', plazaTag:'全部', discCat:'全部',
+  votedIds:new Set(), selectedStatus:'idea',
+  selectedTags:[], selectedIcon:'💡', captchaCode:'',
+  profileData:null, profileTab:'ideas', currentPost:null,
+};
+
+// 初始化用户状态（从 token 还原）
+(function initUser(){
+  try {
+    const token = localStorage.getItem('xfxq_token');
+    const u = localStorage.getItem('xfxq_user');
+    if (token && u) {
+      state.currentUser = JSON.parse(u);
+      renderNavUser();
+    }
+    const v = localStorage.getItem('xfxq_voted');
+    if (v) state.votedIds = new Set(JSON.parse(v));
+    // 加载持久化讨论帖
+    const saved = localStorage.getItem('xfxq_discuss');
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(Array.isArray(parsed) && parsed.length){
+        // 合并：以 id 为主键，用户发的新帖排在前面，静态种子帖保留（若不在 saved 里）
+        const savedIds = new Set(parsed.map(p=>p.id));
+        const merged = [...parsed, ...discussData.filter(p=>!savedIds.has(p.id))];
+        discussData.length=0; merged.forEach(p=>discussData.push(p));
+      }
+    }
+  } catch(e) {}
+})();
+
+// 将 API 想法格式转换为前端格式
+function normalizeIdea(idea) {
+  return {
+    id: idea.id,
+    icon: idea.icon || '💡',
+    iconBg: 'rgba(14,165,233,0.08)',
+    name: idea.title,
+    tagline: idea.tagline || '',
+    detail: idea.tagline || '',
+    status: idea.status || 'idea',
+    tags: idea.category ? [idea.category] : ['其他'],
+    link: idea.link || '',
+    author: idea.author_name || '匿名',
+    authorAvatar: '#8b5cf6',
+    votes: idea.upvotes || 0,
+    comments: idea.comments_count || 0,
+    time: formatTime(idea.created_at),
+  };
+}
+
+// 从 API 加载想法列表
+async function loadIdeas(sort = 'hot') {
+  try {
+    const data = await apiRequest('/ideas?sort=' + sort + '&limit=50');
+    ideasData = (data.ideas || []).map(normalizeIdea);
+    // 更新分类统计
+    catStats.forEach(c => {
+      c.count = ideasData.filter(i => i.tags.includes(c.name)).length;
+    });
+    return ideasData;
+  } catch(e) {
+    console.error('加载想法失败', e);
+    return [];
+  }
+}
+
+// ============================================================
+// 路由
+// ============================================================
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  const navEl=document.getElementById('nav-'+name);
+  if(navEl) navEl.classList.add('active');
+  window.scrollTo(0,0);
+  if(name==='home'){loadIdeas(state.homeTab==='today'?'hot':state.homeTab==='week'?'week':'new').then(()=>{renderHomeIdeas();renderSidebar();});}
+  if(name==='plaza'){loadIdeas(state.plazaTab==='today'?'hot':'new').then(()=>{renderPlazaIdeas();renderPlazaStats();});}
+  if(name==='discuss'){renderDiscuss();renderHotTopics();}
+  if(name==='profile'){loadProfile();}
+}
+
+// ============================================================
+// 渲染
+// ============================================================
+function getStatusBadge(status){
+  if(status==='idea') return '<span class="idea-status status-idea">💡 想法</span>';
+  if(status==='building') return '<span class="idea-status status-building">🔨 开发中</span>';
+  if(status==='launched') return '<span class="idea-status status-launched">✅ 已上线</span>';
+  return '';
+}
+
+function renderIdeaCard(idea,rank){
+  const voted=state.votedIds.has(idea.id);
+  const rankBadge=rank<=3?`<div class="rank-badge rank-${rank}">#${rank}</div>`:'';
+  const tagsHtml=idea.tags.map(t=>`<span class="idea-tag">${t}</span>`).join('');
+  return `
+  <div class="idea-card" onclick="openIdeaDetail('${idea.id}')">
+    ${rankBadge}
+    <button class="vote-btn ${voted?'voted':''}" onclick="toggleVote(event,'${idea.id}')">
+      <span class="vote-arrow">${voted?'▲':'△'}</span>
+      <span class="vote-count">${idea.votes}</span>
+    </button>
+    <div class="idea-icon" style="background:${idea.iconBg}">${idea.icon}</div>
+    <div class="idea-body">
+      <div class="idea-top">
+        <div class="idea-title">${idea.name}</div>
+        ${getStatusBadge(idea.status)}
+      </div>
+      <div class="idea-tagline">${idea.tagline}</div>
+      <div class="idea-meta">
+        <span class="idea-meta-item">👤 ${idea.author}</span>
+        <span class="idea-meta-item">💬 ${idea.comments}</span>
+        <span class="idea-meta-item">🕐 ${idea.time}</span>
+        <div class="idea-tags">${tagsHtml}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function getSortedIdeas(tab,tag){
+  let list=[...ideasData];
+  if(tag!=='全部') list=list.filter(i=>i.tags.includes(tag));
+  if(tab==='today'||tab==='week') list=list.sort((a,b)=>b.votes-a.votes);
+  else if(tab==='new') list=list.sort((a,b)=>b.id-a.id);
+  else if(tab==='launched') list=list.filter(i=>i.status==='launched').sort((a,b)=>b.votes-a.votes);
+  return list;
+}
+
+function renderHomeIdeas(){
+  const list=getSortedIdeas(state.homeTab,state.homeTag);
+  document.getElementById('homeIdeaList').innerHTML=list.map((i,idx)=>renderIdeaCard(i,idx+1)).join('')||'<div style="padding:48px;text-align:center;color:var(--text3)">暂无想法</div>';
+}
+
+function renderPlazaIdeas(){
+  const list=getSortedIdeas(state.plazaTab,state.plazaTag);
+  document.getElementById('plazaIdeaList').innerHTML=list.map((i,idx)=>renderIdeaCard(i,idx+1)).join('')||'<div style="padding:48px;text-align:center;color:var(--text3)">暂无想法</div>';
+}
+
+function renderPlazaStats(){
+  document.getElementById('count-idea').textContent=ideasData.filter(i=>i.status==='idea').length;
+  document.getElementById('count-building').textContent=ideasData.filter(i=>i.status==='building').length;
+  document.getElementById('count-launched').textContent=ideasData.filter(i=>i.status==='launched').length;
+}
+
+function renderSidebar(){
+  let catHtml='';
+  catStats.forEach(c=>{
+    catHtml+=`<div class="cat-list-item" onclick="filterByTag('${c.name}',null)">
+      <div class="cat-list-item-left">${c.icon} ${c.name}</div>
+      <span class="cat-count-badge">${c.count}</span>
+    </div>`;
+  });
+  document.getElementById('sidebarCats').innerHTML=catHtml;
+  const hot=[...ideasData].sort((a,b)=>b.votes-a.votes).slice(0,5);
+  let hotHtml='';
+  hot.forEach((idea,i)=>{
+    hotHtml+=`<div class="hot-idea-item" onclick="openIdeaDetail(${idea.id})">
+      <div class="hot-rank ${i<3?'r'+(i+1):''}">${i+1}</div>
+      <div class="hot-idea-text">${idea.name}<br><span style="font-size:11px;color:var(--text3)">${idea.tagline.slice(0,28)}…</span></div>
+      <div class="hot-idea-votes">▲ ${idea.votes}</div>
+    </div>`;
+  });
+  document.getElementById('sidebarHotList').innerHTML=hotHtml;
+}
+
+function renderDiscuss(filter){
+  const f=filter||state.discCat;
+  const filtered=f==='全部'?discussData:discussData.filter(p=>p.cat===f);
+  let html='';
+  filtered.forEach(p=>{
+    html+=`<div class="post-item" onclick="openPostDetail(discussData.find(d=>d.id===${p.id})||discussData[0])" style="cursor:pointer">
+      <div class="post-avatar" style="background:${p.avatarBg}">${p.avatar}</div>
+      <div class="post-content">
+        <div class="post-cat-tag">${p.cat}</div>
+        <div class="post-title">${p.title}</div>
+        <div class="post-excerpt">${p.excerpt}</div>
+        <div class="post-footer">
+          <span>${p.author}</span><span>${p.time}</span>
+          <div class="post-action" onclick="event.stopPropagation();handleLike(this)">👍 <span>${p.likes}</span></div>
+          <div class="post-action">💬 ${p.comments}</div>
+          <div class="post-action">👁 ${p.views}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('postList').innerHTML=html||'<div style="padding:48px;text-align:center;color:var(--text3)">暂无帖子</div>';
+}
+
+function renderHotTopics(){
+  let html='<div style="display:flex;flex-direction:column;gap:10px">';
+  hotTopicsData.forEach((t,i)=>{
+    html+=`<div class="hot-idea-item" style="padding:6px 4px">
+      <div class="hot-rank ${i<3?'r'+(i+1):''}">${i+1}</div>
+      <div class="hot-idea-text">${t}</div>
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById('hotTopics').innerHTML=html;
+}
+
+// ============================================================
+// 过滤/搜索/Tab
+// ============================================================
+function filterDisc(cat,btn){
+  state.discCat=cat;
+  document.querySelectorAll('.disc-cat-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderDiscuss(cat);
+}
+
+function switchTab(tab,btn){
+  state.homeTab=tab;
+  document.querySelectorAll('#page-home .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHomeIdeas();
+}
+
+function switchPlazaTab(tab,btn){
+  state.plazaTab=tab;
+  document.querySelectorAll('#page-plaza .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPlazaIdeas();
+}
+
+function filterByTag(tag,btn){
+  state.homeTag=tag;
+  document.querySelectorAll('#homeCatTags .cat-tag').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  else document.querySelectorAll('#homeCatTags .cat-tag').forEach(b=>{if(b.textContent.includes(tag))b.classList.add('active');});
+  renderHomeIdeas();
+}
+
+function filterPlazaByTag(tag,btn){
+  state.plazaTag=tag;
+  document.querySelectorAll('#plazaCatTags .cat-tag').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPlazaIdeas();
+}
+
+function handleSearch(val){
+  const v=val.trim().toLowerCase();
+  const list=getSortedIdeas(state.homeTab,state.homeTag).filter(i=>i.name.toLowerCase().includes(v)||i.tagline.toLowerCase().includes(v));
+  document.getElementById('homeIdeaList').innerHTML=list.map((i,idx)=>renderIdeaCard(i,idx+1)).join('')||'<div style="padding:48px;text-align:center;color:var(--text3)">未找到相关想法</div>';
+}
+
+function handlePlazaSearch(val){
+  const v=val.trim().toLowerCase();
+  const list=getSortedIdeas(state.plazaTab,state.plazaTag).filter(i=>i.name.toLowerCase().includes(v)||i.tagline.toLowerCase().includes(v));
+  document.getElementById('plazaIdeaList').innerHTML=list.map((i,idx)=>renderIdeaCard(i,idx+1)).join('')||'<div style="padding:48px;text-align:center;color:var(--text3)">未找到相关想法</div>';
+}
+
+// ============================================================
+// 投票
+// ============================================================
+async function toggleVote(e, id){
+  e.stopPropagation();
+  if(!state.currentUser){openAuth('login');showToast('请先登录后再投票','error');return;}
+  const idea=ideasData.find(i=>String(i.id)===String(id));
+  if(!idea) return;
+  try {
+    const data = await apiRequest('/ideas/' + id + '/vote', { method: 'POST' });
+    if(data.voted){ state.votedIds.add(String(id)); idea.votes++; }
+    else { state.votedIds.delete(String(id)); idea.votes--; }
+    try{localStorage.setItem('xfxq_voted',JSON.stringify([...state.votedIds]));}catch(e2){}
+    const curPage=document.querySelector('.page.active')?.id;
+    if(curPage==='page-home'){renderHomeIdeas();renderSidebar();}
+    if(curPage==='page-plaza'){renderPlazaIdeas();}
+  } catch(err) {
+    showToast(err.message,'error');
+  }
+}
+
+function handleLike(el){
+  if(!state.currentUser){openAuth('login');return;}
+  const span=el.querySelector('span');
+  span.textContent=parseInt(span.textContent)+1;
+  showToast('已点赞','success');
+}
+
+// ============================================================
+// 想法详情 + 评论
+// ============================================================
+async function openIdeaDetail(id){
+  // 先用本地数据快速打开弹窗，再从 API 拉完整数据
+  const localIdea = ideasData.find(i=>String(i.id)===String(id));
+  const voted = state.votedIds.has(String(id));
+  document.getElementById('ideaDetailBody').innerHTML = `
+    <div style="text-align:center;padding:40px;color:var(--text3)">
+      <div style="font-size:24px;margin-bottom:8px">⏳</div>加载中…
+    </div>`;
+  openModal('ideaDetailModal');
+
+  try {
+    const res = await apiRequest('/ideas/' + id);
+    const idea = res.idea || localIdea;
+    // 兼容后端字段名 upvotes vs 前端 votes
+    if(idea.upvotes !== undefined && idea.votes === undefined) idea.votes = idea.upvotes;
+    if(!idea.author && idea.author_name) idea.author = idea.author_name;
+    if(!idea.name && idea.title) idea.name = idea.title;
+    const comments = res.comments || [];
+    renderIdeaDetailContent(idea, comments, voted);
+  } catch(err) {
+    if(localIdea) renderIdeaDetailContent(localIdea, [], voted);
+    else document.getElementById('ideaDetailBody').innerHTML = `<div style="padding:40px;text-align:center;color:var(--rose)">加载失败：${err.message}</div>`;
+  }
+}
+
+function renderIdeaDetailContent(idea, comments, voted){
+  const tagsHtml = (idea.tags||[idea.category||'']).map(t=>`<span class="idea-tag">${t}</span>`).join('');
+
+  document.getElementById('ideaDetailBody').innerHTML = `
+    <div class="idea-detail-header">
+      <div class="idea-detail-icon" style="background:${idea.iconBg||'#1e293b'}">${idea.icon||'💡'}</div>
+      <div class="idea-detail-info">
+        <div class="idea-detail-title">${escHtml(idea.name||idea.title||'')}</div>
+        <div class="idea-detail-tagline">${escHtml(idea.tagline||'')}</div>
+        <div class="idea-detail-meta">${getStatusBadge(idea.status)}${tagsHtml}</div>
+      </div>
+      <div class="idea-detail-vote">
+        <button class="vote-btn-lg ${voted?'voted':''}" id="detail-vote-btn" onclick="toggleVoteInDetail(event,'${idea.id}')">
+          <span class="va">${voted?'▲':'△'}</span>
+          <span class="vc">${idea.votes||0}</span>
+        </button>
+      </div>
+    </div>
+    <div style="font-size:14px;color:var(--text2);line-height:1.9;margin-bottom:8px">${escHtml(idea.detail||idea.tagline||'')}</div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--text3);padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:20px">
+      <span>👤 ${escHtml(idea.author||idea.author_name||'')}</span>
+      <span>🕐 ${formatTime(idea.created_at||idea.time)}</span>
+      <span>💬 ${comments.length} 条评论</span>
+      ${idea.link?`<a href="${escHtml(idea.link)}" target="_blank" style="color:var(--primary);text-decoration:none">🔗 查看链接 →</a>`:''}
+      ${state.currentUser && idea.author_id && String(state.currentUser.id)===String(idea.author_id)
+        ? `<button class="detail-delete-btn" onclick="deleteIdea('${idea.id}')">🗑️ 删除想法</button>` : ''}
+    </div>
+    <div class="comment-section">
+      <div class="comment-title">评论 <span style="color:var(--text3);font-size:13px;font-weight:400">${comments.length}</span></div>
+      <div id="commentList">${renderCommentTree(comments)}</div>
+      ${state.currentUser ? `
+        <div class="comment-input-wrap" id="mainCommentBox">
+          <div class="comment-avatar" style="flex-shrink:0">${(state.currentUser.nickname||'我')[0]}</div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+            <textarea id="commentInput" class="comment-textarea" placeholder="说说你的想法…" rows="3"></textarea>
+            <div style="text-align:right">
+              <button class="btn-primary-sm" onclick="submitComment('${idea.id}', null)">发送评论</button>
+            </div>
+          </div>
+        </div>` : `
+        <div style="text-align:center;padding:16px;font-size:13px;color:var(--text3)">
+          <a href="javascript:void(0)" onclick="closeModal('ideaDetailModal');openAuth('login')" style="color:var(--primary)">登录后</a> 参与评论
+        </div>`}
+    </div>`;
+  // 保存当前详情的 ideaId，供回复使用
+  document.getElementById('ideaDetailBody').dataset.ideaId = idea.id;
+}
+
+// 把平铺评论列表渲染为树状（只做一级回复，回复的回复平铺在同一缩进下）
+function renderCommentTree(comments){
+  if(!comments.length) return `<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">暂无评论，来第一个发言吧 👋</div>`;
+  // 分离顶层评论和回复
+  const roots = comments.filter(c=>!c.parent_id);
+  const replies = comments.filter(c=>!!c.parent_id);
+  const replyMap = {};
+  replies.forEach(r=>{ (replyMap[r.parent_id]||(replyMap[r.parent_id]=[])).push(r); });
+
+  return roots.map(c => renderOneComment(c, replyMap, false)).join('');
+}
+
+function renderOneComment(c, replyMap, isReply){
+  const childrenHtml = !isReply && replyMap[c.id]
+    ? `<div class="reply-list">${replyMap[c.id].map(r=>renderOneComment(r, {}, true)).join('')}</div>` : '';
+  const replyBtn = state.currentUser
+    ? `<button class="reply-btn" onclick="showReplyBox('${c.id}','${escHtml(c.author_name||'匿名')}')">回复</button>` : '';
+  const deleteBtn = state.currentUser && String(state.currentUser.id) === String(c.user_id)
+    ? `<button class="reply-btn" style="color:var(--rose)" onclick="deleteComment('${c.id}',${isReply})">删除</button>` : '';
+  return `
+    <div class="comment-item ${isReply?'is-reply':''}" id="comment-${c.id}">
+      <div class="comment-avatar">${(c.author_name||'匿名')[0]}</div>
+      <div class="comment-body">
+        <div class="comment-meta">
+          <span class="comment-author">${escHtml(c.author_name||'匿名')}</span>
+          ${c.parent_author?`<span class="reply-to">回复 <b>${escHtml(c.parent_author)}</b></span>`:''}
+          <span class="comment-time">${formatTime(c.created_at)}</span>
+          ${replyBtn}
+          ${deleteBtn}
+        </div>
+        <div class="comment-text">${escHtml(c.content)}</div>
+        <div class="reply-input-wrap" id="reply-box-${c.id}" style="display:none"></div>
+      </div>
+    </div>
+    ${childrenHtml}`;
+}
+
+function showReplyBox(parentId, parentAuthor){
+  // 收起其他所有回复框
+  document.querySelectorAll('.reply-input-wrap').forEach(el=>{
+    el.style.display='none'; el.innerHTML='';
+  });
+  if(!state.currentUser){ openAuth('login'); return; }
+  const ideaId = document.getElementById('ideaDetailBody').dataset.ideaId;
+  const box = document.getElementById('reply-box-'+parentId);
+  if(!box) return;
+  box.style.display='flex';
+  box.style.gap='10px';
+  box.style.marginTop='10px';
+  box.innerHTML=`
+    <div class="comment-avatar" style="flex-shrink:0;width:28px;height:28px;font-size:12px">${(state.currentUser.nickname||'我')[0]}</div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+      <textarea class="comment-textarea" id="reply-input-${parentId}" placeholder="回复 @${parentAuthor}…" rows="2" style="font-size:13px"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-cancel-sm" onclick="document.getElementById('reply-box-${parentId}').style.display='none'">取消</button>
+        <button class="btn-primary-sm" onclick="submitComment('${ideaId}','${parentId}')">回复</button>
+      </div>
+    </div>`;
+  document.getElementById('reply-input-'+parentId)?.focus();
+}
+
+async function toggleVoteInDetail(e, id){
+  await toggleVote(e, id);
+  // 同步更新详情弹窗内的票数
+  const idea = ideasData.find(i=>String(i.id)===String(id));
+  if(!idea) return;
+  const voted2 = state.votedIds.has(String(id));
+  const btn = document.getElementById('detail-vote-btn');
+  if(btn){
+    btn.className = 'vote-btn-lg ' + (voted2?'voted':'');
+    btn.innerHTML = `<span class="va">${voted2?'▲':'△'}</span><span class="vc">${idea.votes}</span>`;
+  }
+}
+
+async function submitComment(ideaId, parentId){
+  // 取输入框内容
+  const inputEl = parentId
+    ? document.getElementById('reply-input-'+parentId)
+    : document.getElementById('commentInput');
+  const content = inputEl?.value?.trim();
+  if(!content){ showToast('评论不能为空','error'); return; }
+  if(!state.currentUser){ openAuth('login'); return; }
+  try {
+    const body = { content };
+    if(parentId) body.parent_id = parentId;
+    const data = await apiRequest('/ideas/' + ideaId + '/comments', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+    inputEl.value = '';
+    const c = data.comment;
+
+    if(parentId){
+      // 回复：插入到父评论的 reply-list 里
+      const replyBox = document.getElementById('reply-box-'+parentId);
+      if(replyBox) replyBox.style.display='none';
+      let replyList = document.querySelector(`#comment-${parentId} ~ .reply-list`);
+      if(!replyList){
+        // reply-list 还不存在，创建并插到父评论后面
+        const parentEl = document.getElementById('comment-'+parentId);
+        if(parentEl){
+          replyList = document.createElement('div');
+          replyList.className='reply-list';
+          parentEl.insertAdjacentElement('afterend', replyList);
+        }
+      }
+      if(replyList){
+        const html = renderOneComment({...c, parent_author: c.parent_author||state.currentUser.nickname}, {}, true);
+        replyList.insertAdjacentHTML('beforeend', html);
+      }
+    } else {
+      // 顶层评论：插入到列表末尾
+      const list = document.getElementById('commentList');
+      const emptyEl = list?.querySelector('div[style*="暂无评论"]');
+      if(emptyEl) list.innerHTML = '';
+      const html = renderOneComment(c, {}, false);
+      list?.insertAdjacentHTML('beforeend', html);
+    }
+
+    // 更新评论数显示
+    const idea = ideasData.find(i=>String(i.id)===String(ideaId));
+    if(idea) idea.comments = (idea.comments||0)+1;
+    const titleEl = document.querySelector('.comment-title');
+    if(titleEl){
+      const cur = parseInt(titleEl.querySelector('span')?.textContent||'0');
+      const sp = titleEl.querySelector('span');
+      if(sp) sp.textContent = cur+1;
+    }
+    showToast('评论发布成功 🎉','success');
+  } catch(err){
+    showToast(err.message,'error');
+  }
+}
+
+function escHtml(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function formatTime(t){
+  if(!t) return '';
+  const d = typeof t === 'number' && t < 1e10 ? new Date(t*1000) : new Date(t);
+  const now = new Date(), diff = now - d;
+  if(diff < 60000) return '刚刚';
+  if(diff < 3600000) return Math.floor(diff/60000) + '分钟前';
+  if(diff < 86400000) return Math.floor(diff/3600000) + '小时前';
+  if(diff < 2592000000) return Math.floor(diff/86400000) + '天前';
+  return d.toLocaleDateString('zh-CN');
+}
+
+// ============================================================
+// 发布想法
+// ============================================================
+function openSubmitIdea(){
+  if(!state.currentUser){openAuth('login');showToast('请先登录','error');return;}
+  openModal('submitIdeaModal');
+}
+
+function selectStatus(el){
+  document.querySelectorAll('.status-opt').forEach(o=>{
+    o.classList.remove('sel-idea','sel-building','sel-launched');
+    o.classList.add('unselected');
+  });
+  const s=el.dataset.status;
+  state.selectedStatus=s;
+  el.classList.remove('unselected');
+  if(s==='idea') el.classList.add('sel-idea');
+  if(s==='building') el.classList.add('sel-building');
+  if(s==='launched') el.classList.add('sel-launched');
+}
+
+function selectIcon(el){
+  document.querySelectorAll('.icon-opt').forEach(o=>{
+    o.style.border='2px solid var(--border)';
+    o.style.background='transparent';
+  });
+  el.style.border='2px solid var(--primary)';
+  el.style.background='rgba(14,165,233,0.1)';
+  state.selectedIcon=el.dataset.icon;
+}
+
+async function submitIdea(){
+  const name=document.getElementById('idea-name').value.trim();
+  const tagline=document.getElementById('idea-tagline').value.trim();
+  if(!name){showToast('请填写想法名称','error');return;}
+  if(!tagline){showToast('请填写一句话描述','error');return;}
+  if(state.selectedTags.length===0){showToast('请至少选一个分类标签','error');return;}
+  try {
+    const data = await apiRequest('/ideas', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: name,
+        tagline,
+        category: state.selectedTags[0],
+        status: state.selectedStatus,
+        link: document.getElementById('idea-link').value.trim(),
+      })
+    });
+    closeModal('submitIdeaModal');
+    showToast('想法发布成功！🎉','success');
+    // 重置表单
+    document.getElementById('idea-name').value='';
+    document.getElementById('idea-tagline').value='';
+    document.getElementById('idea-detail').value='';
+    document.getElementById('idea-link').value='';
+    document.querySelectorAll('#tagSelect .tag-opt').forEach(o=>o.classList.remove('selected'));
+    state.selectedTags=[];
+    // 刷新列表
+    await loadIdeas('new');
+    renderHomeIdeas(); renderSidebar();
+  } catch(err) {
+    showToast(err.message,'error');
+  }
+}
+
+// ============================================================
+// 发帖
+// ============================================================
+function openPostModal(){
+  if(!state.currentUser){openAuth('login');showToast('请先登录后再发布','error');return;}
+  openModal('postModal');
+}
+
+function submitPost(){
+  const title=document.getElementById('post-title-input').value.trim();
+  const content=document.getElementById('post-content-input').value.trim();
+  const cat=document.querySelector('#postCatSelect .tag-opt.selected')?.dataset?.cat||'想法探讨';
+  if(!title){showToast('请填写标题','error');return;}
+  if(!content){showToast('请填写内容','error');return;}
+  const avatarChars=['👨‍💻','👩‍🎨','🧑‍🔬','💼','🚀','🌟','🎯'];
+  const bgs=['#8b5cf6','#f43f5e','#10b981','#f59e0b','#0ea5e9'];
+  const newPost = {id:Date.now(),
+    avatar:state.currentUser?.avatar||avatarChars[Math.floor(Math.random()*avatarChars.length)],
+    avatarBg:bgs[Math.floor(Math.random()*bgs.length)],
+    author:state.currentUser?.name||'匿名',cat,title,
+    excerpt:content.slice(0,100)+(content.length>100?'...':''),
+    content,
+    likes:0,comments:0,views:1,time:'刚刚',_comments:[]};
+  discussData.unshift(newPost);
+  try{ localStorage.setItem('xfxq_discuss', JSON.stringify(discussData)); }catch(e){}
+  closeModal('postModal');
+  renderDiscuss(state.discCat);
+  document.getElementById('post-title-input').value='';
+  document.getElementById('post-content-input').value='';
+  showToast('发布成功！🎉','success');
+}
+
+// ============================================================
+// 登录/注册
+// ============================================================
+function openAuth(tab){openModal('authModal');switchAuthTab(tab||'login');if(tab==='register')setTimeout(refreshCaptcha,50);}
+
+function switchAuthTab(tab){
+  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
+  document.getElementById('registerForm').style.display=tab==='register'?'block':'none';
+  document.getElementById('tab-login').classList.toggle('active',tab==='login');
+  document.getElementById('tab-register').classList.toggle('active',tab==='register');
+  if(tab==='register') setTimeout(refreshCaptcha,50);
+}
+
+async function doLogin(){
+  const nickname=document.getElementById('login-name').value.trim();
+  const password=document.getElementById('login-pwd').value;
+  if(!nickname||!password){showToast('请填写昵称和密码','error');return;}
+  try {
+    const data = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ nickname, password })
+    });
+    localStorage.setItem('xfxq_token', data.token);
+    const user = { name: data.user.nickname, avatar: data.user.nickname[0].toUpperCase(), id: data.user.id };
+    state.currentUser = user;
+    localStorage.setItem('xfxq_user', JSON.stringify(user));
+    renderNavUser();
+    closeModal('authModal');
+    showToast('登录成功，欢迎回来 ' + nickname + '！','success');
+  } catch(err) {
+    showToast(err.message,'error');
+  }
+}
+
+async function doRegister(){
+  const nickname=document.getElementById('reg-name').value.trim();
+  const password=document.getElementById('reg-pwd').value;
+  const captcha=document.getElementById('reg-captcha').value.trim().toUpperCase();
+  if(!nickname||!password){showToast('请填写昵称和密码','error');return;}
+  if(password.length<6){showToast('密码至少6位','error');return;}
+  if(captcha!==state.captchaCode.toUpperCase()){showToast('验证码错误，请重试','error');refreshCaptcha();return;}
+  if(!document.getElementById('agreeCheck').checked){showToast('请先阅读并同意用户协议','error');return;}
+  try {
+    const data = await apiRequest('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ nickname, password })
+    });
+    localStorage.setItem('xfxq_token', data.token);
+    const user = { name: data.user.nickname, avatar: data.user.nickname[0].toUpperCase(), id: data.user.id };
+    state.currentUser = user;
+    localStorage.setItem('xfxq_user', JSON.stringify(user));
+    renderNavUser();
+    closeModal('authModal');
+    showToast('注册成功！欢迎加入想法星球 🎉','success');
+  } catch(err) {
+    showToast(err.message,'error');
+  }
+}
+
+function socialLogin(platform){showToast(platform+'登录暂未开放，请使用昵称注册','error');}
+
+function renderNavUser(){
+  const u=state.currentUser;if(!u)return;
+  const navRight=document.getElementById('navRight');
+  navRight.style.cssText='display:flex;align-items:center;gap:10px;';
+  navRight.innerHTML=`
+    <div style="position:relative">
+      <div class="user-avatar" onclick="toggleDropdown()">${u.avatar||'👤'}</div>
+      <div class="user-dropdown" id="userDropdown">
+        <a onclick="openProfile()">👤 ${u.name}</a>
+        <a onclick="openProfile()">🏆 个人主页</a>
+        <a onclick="showPage('plaza')">💡 想法广场</a>
+        <div class="divider"></div>
+        <a onclick="logout()">退出登录</a>
+      </div>
+    </div>
+    <button class="btn-submit-idea" onclick="openSubmitIdea()">✏️ 发布想法</button>`;
+}
+
+// ============================================================
+// 等级系统
+// ============================================================
+const LEVELS = [
+  { name:'灵光一现', min:0,   max:49,   icon:'💡', color:'#94a3b8' },
+  { name:'思维泉涌', min:50,  max:149,  icon:'💭', color:'#38bdf8' },
+  { name:'点子达人', min:150, max:399,  icon:'✨', color:'#a78bfa' },
+  { name:'点子王',   min:400, max:999,  icon:'👑', color:'#f59e0b' },
+  { name:'创想大师', min:1000,max:Infinity,icon:'🚀',color:'#f43f5e' },
+];
+
+function getLevelInfo(score){
+  for(let i=0;i<LEVELS.length;i++){
+    if(score>=LEVELS[i].min && score<=LEVELS[i].max) return { level:LEVELS[i], index:i, next:LEVELS[i+1]||null };
+  }
+  return { level:LEVELS[0], index:0, next:LEVELS[1] };
+}
+
+// ============================================================
+// 个人主页
+// ============================================================
+function openProfile(){
+  const d=document.getElementById('userDropdown');if(d)d.classList.remove('show');
+  if(!state.currentUser){openAuth('login');return;}
+  showPage('profile');
+}
+
+async function loadProfile(){
+  if(!state.currentUser) return;
+  const uid = state.currentUser.id;
+  try {
+    const data = await apiRequest('/users/'+uid);
+    renderProfile(data);
+  } catch(err){
+    document.getElementById('profileContent').innerHTML=`<div style="padding:40px;text-align:center;color:var(--rose)">加载失败：${err.message}</div>`;
+  }
+}
+
+function renderProfile(data){
+  const { user, ideas, totalScore, commentCount } = data;
+  const { level, index, next } = getLevelInfo(totalScore||0);
+
+  // 头像
+  const av = user.avatar || (user.nickname?user.nickname[0].toUpperCase():'我');
+  document.getElementById('profileAvatar').textContent = av;
+  document.getElementById('profileName').textContent = user.nickname;
+  const badge = document.getElementById('profileLevelBadge');
+  badge.textContent = level.icon + ' ' + level.name;
+  badge.style.color = level.color;
+  badge.style.borderColor = level.color + '50';
+  badge.style.background = level.color + '15';
+
+  document.getElementById('profileJoin').textContent = '加入时间：' + new Date(user.created_at*1000).toLocaleDateString('zh-CN');
+  document.getElementById('profileScore').textContent = totalScore||0;
+
+  // 进度条
+  document.getElementById('levelCurLabel').textContent = level.name;
+  document.getElementById('levelNextLabel').textContent = next ? ('下一级：'+next.name) : '已达最高等级 🏆';
+  const pct = next ? Math.min(100, Math.round(((totalScore-level.min)/(next.min-level.min))*100)) : 100;
+  const bar = document.getElementById('levelBarFill');
+  bar.style.width = pct+'%';
+  bar.style.background = 'linear-gradient(90deg,'+level.color+','+( next?next.color:level.color )+')';
+
+  // 统计
+  document.getElementById('profileIdeaCount').textContent = ideas.length;
+  document.getElementById('profileCommentCount').textContent = commentCount||0;
+  const totalVotes = ideas.reduce((s,i)=>s+(i.upvotes||0),0);
+  document.getElementById('profileVoteGot').textContent = totalVotes;
+
+  // 保存到 state 供 tab 切换用
+  state.profileData = data;
+  state.profileTab = 'ideas';
+  renderProfileContent('ideas');
+}
+
+function switchProfileTab(tab, btn){
+  state.profileTab = tab;
+  document.querySelectorAll('.profile-tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderProfileContent(tab);
+}
+
+function renderProfileContent(tab){
+  const data = state.profileData;
+  if(!data){ loadProfile(); return; }
+  const container = document.getElementById('profileContent');
+  if(tab === 'ideas'){
+    if(!data.ideas||!data.ideas.length){
+      container.innerHTML=`<div style="padding:48px;text-align:center;color:var(--text3)">还没有发布想法，<a href="javascript:void(0)" onclick="openSubmitIdea()" style="color:var(--primary)">去发布</a></div>`;
+      return;
+    }
+    container.innerHTML = data.ideas.map(idea=>{
+      const norm = normalizeIdea(idea);
+      return `<div class="idea-card" onclick="openIdeaDetail('${norm.id}')">
+        <div class="idea-icon" style="background:${norm.iconBg}">${norm.icon}</div>
+        <div class="idea-body">
+          <div class="idea-top"><div class="idea-title">${norm.name}</div>${getStatusBadge(norm.status)}</div>
+          <div class="idea-tagline">${norm.tagline}</div>
+          <div class="idea-meta">
+            <span class="idea-meta-item">▲ ${norm.votes}</span>
+            <span class="idea-meta-item">💬 ${norm.comments}</span>
+            <span class="idea-meta-item">🕐 ${norm.time}</span>
+          </div>
+        </div>
+        ${state.currentUser && state.currentUser.id === idea.author_id
+          ? `<button class="detail-delete-btn" style="position:static;margin-left:auto;flex-shrink:0" onclick="event.stopPropagation();deleteIdea('${norm.id}')">🗑️ 删除</button>` : ''}
+      </div>`;
+    }).join('');
+  } else if(tab === 'voted'){
+    const votedList = ideasData.filter(i=>state.votedIds.has(String(i.id)));
+    if(!votedList.length){
+      container.innerHTML=`<div style="padding:48px;text-align:center;color:var(--text3)">还没有投票过的想法</div>`;
+      return;
+    }
+    container.innerHTML = votedList.map(idea=>`<div class="idea-card" onclick="openIdeaDetail('${idea.id}')">
+      <div class="idea-icon" style="background:${idea.iconBg}">${idea.icon}</div>
+      <div class="idea-body">
+        <div class="idea-top"><div class="idea-title">${idea.name}</div>${getStatusBadge(idea.status)}</div>
+        <div class="idea-tagline">${idea.tagline}</div>
+        <div class="idea-meta">
+          <span class="idea-meta-item">▲ ${idea.votes}</span>
+          <span class="idea-meta-item">💬 ${idea.comments}</span>
+        </div>
+      </div>
+    </div>`).join('');
+  }
+}
+
+// ============================================================
+// 编辑资料
+// ============================================================
+function openEditProfile(){
+  if(!state.currentUser){openAuth('login');return;}
+  document.getElementById('editNickname').value = state.currentUser.name||'';
+  document.getElementById('editAvatar').value = state.profileData?.user?.avatar||'';
+  openModal('editProfileModal');
+}
+
+async function saveProfile(){
+  const nickname = document.getElementById('editNickname').value.trim();
+  const avatar = document.getElementById('editAvatar').value.trim();
+  if(!nickname){showToast('昵称不能为空','error');return;}
+  try {
+    const data = await apiRequest('/auth/me',{
+      method:'PUT',
+      body: JSON.stringify({ nickname, avatar })
+    });
+    // 更新 token + 本地 state
+    localStorage.setItem('xfxq_token', data.token);
+    state.currentUser.name = data.user.nickname;
+    state.currentUser.avatar = data.user.avatar || data.user.nickname[0].toUpperCase();
+    localStorage.setItem('xfxq_user', JSON.stringify(state.currentUser));
+    renderNavUser();
+    closeModal('editProfileModal');
+    // 刷新个人主页显示
+    if(state.profileData){
+      state.profileData.user.nickname = data.user.nickname;
+      state.profileData.user.avatar = data.user.avatar;
+      renderProfile(state.profileData);
+    }
+    showToast('资料修改成功 ✅','success');
+  } catch(err){
+    showToast(err.message,'error');
+  }
+}
+
+// ============================================================
+// 删除想法 / 评论
+// ============================================================
+async function deleteIdea(id){
+  if(!confirm('确定要删除这个想法吗？此操作不可恢复。')) return;
+  try {
+    await apiRequest('/ideas/'+id,{ method:'DELETE' });
+    showToast('想法已删除','success');
+    closeModal('ideaDetailModal');
+    // 从本地列表移除
+    ideasData = ideasData.filter(i=>String(i.id)!==String(id));
+    const curPage = document.querySelector('.page.active')?.id;
+    if(curPage==='page-home'){ renderHomeIdeas(); renderSidebar(); }
+    if(curPage==='page-plaza'){ renderPlazaIdeas(); renderPlazaStats(); }
+    if(curPage==='page-profile'){ await loadProfile(); }
+  } catch(err){
+    showToast(err.message,'error');
+  }
+}
+
+async function deleteComment(commentId, isReply){
+  if(!confirm('确定要删除这条评论吗？')) return;
+  try {
+    await apiRequest('/comments/'+commentId,{ method:'DELETE' });
+    showToast('评论已删除','success');
+    const el = document.getElementById('comment-'+commentId);
+    if(el){
+      // 如果是顶层评论，连 reply-list 也删掉
+      const sibling = el.nextElementSibling;
+      if(sibling && sibling.classList.contains('reply-list')) sibling.remove();
+      el.remove();
+    }
+    // 更新评论计数
+    const titleEl = document.querySelector('.comment-title');
+    if(titleEl){
+      const sp = titleEl.querySelector('span');
+      if(sp){ const n=parseInt(sp.textContent||'0'); if(n>0) sp.textContent=n-1; }
+    }
+  } catch(err){
+    showToast(err.message,'error');
+  }
+}
+
+// ============================================================
+// 讨论帖详情弹窗
+// ============================================================
+function openPostDetail(post){
+  document.getElementById('pdCatTag').textContent = post.cat||'';
+  document.getElementById('pdTitle').textContent = post.title||'';
+  document.getElementById('pdMeta').textContent = (post.author||'') + ' · ' + (post.time||'');
+  document.getElementById('pdContent').textContent = post.content || post.excerpt || '';
+  document.getElementById('pdCommentCount').textContent = post.comments||0;
+  document.getElementById('pdCommentList').innerHTML = '';
+  // 渲染讨论帖评论（本地数据）
+  const comments = post._comments || [];
+  if(comments.length){
+    document.getElementById('pdCommentList').innerHTML = comments.map(c=>`
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <div class="comment-avatar" style="width:30px;height:30px;font-size:12px;flex-shrink:0">${(c.author||'匿名')[0]}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px">${escHtml(c.author)} <span style="font-size:11px;color:var(--text3);font-weight:400">${c.time||''}</span></div>
+          <div style="font-size:13px;color:var(--text2)">${escHtml(c.content)}</div>
+        </div>
+      </div>`).join('');
+  } else {
+    document.getElementById('pdCommentList').innerHTML = `<div style="text-align:center;padding:16px 0;font-size:13px;color:var(--text3)">暂无评论，来第一个发言吧 👋</div>`;
+  }
+  // 评论输入框
+  if(state.currentUser){
+    document.getElementById('pdCommentInput').innerHTML = `
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <div class="comment-avatar" style="width:30px;height:30px;font-size:12px;flex-shrink:0">${(state.currentUser.name||'我')[0]}</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+          <textarea class="comment-textarea" id="pdCommentText" rows="2" placeholder="发表你的看法…"></textarea>
+          <div style="text-align:right"><button class="btn-primary-sm" onclick="submitPostComment(${post.id})">发送</button></div>
+        </div>
+      </div>`;
+  } else {
+    document.getElementById('pdCommentInput').innerHTML = `<div style="text-align:center;padding:12px;font-size:13px;color:var(--text3)"><a href="javascript:void(0)" onclick="closePostDetail();openAuth('login')" style="color:var(--primary)">登录后</a>参与讨论</div>`;
+  }
+  state.currentPost = post;
+  document.getElementById('postDetailOverlay').classList.add('show');
+  document.body.style.overflow='hidden';
+}
+
+function closePostDetail(){
+  document.getElementById('postDetailOverlay').classList.remove('show');
+  document.body.style.overflow='';
+}
+
+function submitPostComment(postId){
+  const content = document.getElementById('pdCommentText')?.value?.trim();
+  if(!content){showToast('评论不能为空','error');return;}
+  if(!state.currentUser){openAuth('login');return;}
+  const post = discussData.find(p=>p.id===postId);
+  if(!post) return;
+  if(!post._comments) post._comments=[];
+  const newComment = { author:state.currentUser.name, content, time:'刚刚' };
+  post._comments.push(newComment);
+  post.comments = (post.comments||0)+1;
+  // 重新渲染评论
+  const list = document.getElementById('pdCommentList');
+  const newHtml = `
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div class="comment-avatar" style="width:30px;height:30px;font-size:12px;flex-shrink:0">${(newComment.author||'匿名')[0]}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px">${escHtml(newComment.author)} <span style="font-size:11px;color:var(--text3);font-weight:400">刚刚</span></div>
+        <div style="font-size:13px;color:var(--text2)">${escHtml(newComment.content)}</div>
+      </div>
+    </div>`;
+  // 移除"暂无评论"
+  if(list.querySelector('div[style*="text-align:center"]')) list.innerHTML='';
+  list.insertAdjacentHTML('beforeend', newHtml);
+  document.getElementById('pdCommentCount').textContent = post.comments;
+  document.getElementById('pdCommentText').value='';
+  showToast('评论发布成功 🎉','success');
+  // 保存到 localStorage
+  try{ localStorage.setItem('xfxq_discuss', JSON.stringify(discussData)); }catch(e){}
+  // 刷新讨论列表
+  renderDiscuss(state.discCat);
+}
+
+function toggleDropdown(){const d=document.getElementById('userDropdown');if(d)d.classList.toggle('show');}
+
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.user-avatar')&&!e.target.closest('.user-dropdown')){
+    const d=document.getElementById('userDropdown');if(d)d.classList.remove('show');
+  }
+});
+
+function logout(){
+  state.currentUser=null;
+  try{
+    localStorage.removeItem('xfxq_user');
+    localStorage.removeItem('xfxq_token');
+  }catch(e){}
+  const navRight=document.getElementById('navRight');
+  navRight.style.cssText='display:flex;align-items:center;gap:10px;';
+  navRight.innerHTML=`
+    <button class="btn-login" onclick="openAuth('login')">登录</button>
+    <button class="btn-submit-idea" onclick="openSubmitIdea()">✏️ 发布想法</button>`;
+  showToast('已退出登录','success');
+}
+
+// ============================================================
+// 图形验证码
+// ============================================================
+function refreshCaptcha(){
+  const canvas=document.getElementById('captchaCanvas');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const chars='ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+  let code='';
+  for(let i=0;i<4;i++) code+=chars[Math.floor(Math.random()*chars.length)];
+  state.captchaCode=code;
+  ctx.clearRect(0,0,110,40);
+  ctx.fillStyle='#1e293b';ctx.fillRect(0,0,110,40);
+  for(let i=0;i<4;i++){
+    ctx.strokeStyle=`hsla(${Math.random()*360},60%,60%,0.5)`;
+    ctx.lineWidth=1;ctx.beginPath();
+    ctx.moveTo(Math.random()*110,Math.random()*40);
+    ctx.lineTo(Math.random()*110,Math.random()*40);ctx.stroke();
+  }
+  for(let i=0;i<30;i++){
+    ctx.fillStyle=`hsla(${Math.random()*360},60%,60%,0.4)`;
+    ctx.fillRect(Math.random()*110,Math.random()*40,2,2);
+  }
+  code.split('').forEach((c,i)=>{
+    ctx.font=`bold ${18+Math.random()*4}px Arial`;
+    ctx.fillStyle=`hsl(${190+Math.random()*160},80%,70%)`;
+    ctx.save();ctx.translate(20+i*22,(Math.random()*6)+22);
+    ctx.rotate((Math.random()-0.5)*0.4);ctx.fillText(c,0,0);ctx.restore();
+  });
+}
+
+// ============================================================
+// 模态框
+// ============================================================
+function openModal(id){document.getElementById(id).classList.add('show');document.body.style.overflow='hidden';}
+function closeModal(id){document.getElementById(id).classList.remove('show');document.body.style.overflow='';}
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',function(e){if(e.target===this)closeModal(this.id);});
+});
+
+// ============================================================
+// Toast
+// ============================================================
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+type;
+  void t.offsetWidth;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ============================================================
+// DOMContentLoaded
+// ============================================================
+document.addEventListener('DOMContentLoaded', function(){
+  const tagSel=document.getElementById('tagSelect');
+  if(tagSel){
+    tagSel.addEventListener('click',function(e){
+      const opt=e.target.closest('.tag-opt');if(!opt)return;
+      const selected=tagSel.querySelectorAll('.tag-opt.selected');
+      if(opt.classList.contains('selected')){opt.classList.remove('selected');}
+      else{if(selected.length>=2){showToast('最多选2个分类','error');return;}opt.classList.add('selected');}
+      state.selectedTags=[...tagSel.querySelectorAll('.tag-opt.selected')].map(o=>o.dataset.tag);
+    });
+  }
+  const ideaName=document.getElementById('idea-name');
+  if(ideaName) ideaName.addEventListener('input',function(){document.getElementById('idea-name-count').textContent=this.value.length+'/40';});
+  const ideaTagline=document.getElementById('idea-tagline');
+  if(ideaTagline) ideaTagline.addEventListener('input',function(){document.getElementById('idea-tagline-count').textContent=this.value.length+'/80';});
+  const postCat=document.getElementById('postCatSelect');
+  if(postCat){
+    postCat.addEventListener('click',function(e){
+      const opt=e.target.closest('.tag-opt');if(!opt)return;
+      postCat.querySelectorAll('.tag-opt').forEach(o=>o.classList.remove('selected'));
+      opt.classList.add('selected');
+    });
+  }
+  // 帖子详情遮罩点击关闭
+  const overlay=document.getElementById('postDetailOverlay');
+  if(overlay) overlay.addEventListener('click',function(e){ if(e.target===this) closePostDetail(); });
+  // 从 API 加载想法数据
+  loadIdeas('hot').then(()=>{
+    renderHomeIdeas();
+    renderSidebar();
+  });
+  refreshCaptcha();
+});
+</script>
+</body>
+</html>
