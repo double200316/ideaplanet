@@ -8,7 +8,7 @@
 [![Stars](https://img.shields.io/github/stars/yourusername/ideaplanet?style=social)](https://github.com/yourusername/ideaplanet)
 [![Website](https://img.shields.io/badge/website-在线体验-brightgreen)](https://xn--5br93cv32ao8m.com)
 
-[🌐 在线体验](https://xn--5br93cv32ao8m.com) · [📝 提交想法](https://xn--5br93cv32ao8m.com) · [🐛 报告 Bug](https://github.com/yourusername/ideaplanet/issues)
+[🌐 在线体验](http://159.75.11.160/) · [📝 提交想法](https://xn--5br93cv32ao8m.com) · [🐛 报告 Bug](https://github.com/yourusername/ideaplanet/issues)
 
 ![IdeaPlanet Preview](preview.png)
 
@@ -22,7 +22,7 @@
 
 每天都有人在微信群里说出绝妙的产品想法，然后消失在信息流里。想法星球要做的，就是给每一个想法一个被看见、被讨论、被实现的机会。
 
-**网站**：[创启星球.com](https://xn--5br93cv32ao8m.com)
+**网站**：(http://159.75.11.160/)
 
 ---
 
